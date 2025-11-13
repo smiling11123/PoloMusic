@@ -47,10 +47,11 @@
 </template>
 
 <script setup lang="ts">
-import { GetMusicFromList, MusicId } from '@/api/GetMusicFromList'
+import { GetMusicFromList, MusicIdList } from '@/api/GetMusicFromList'
 import { ref, onMounted, computed } from 'vue'
 import { HighQualityMusicList } from '@/api/GetHighQualityMusicList'
-import { MusicUrl, PlayMusicFromList } from '@/api/GetMusic'
+import { MusicUrl } from '@/api/GetMusic'
+import { Player } from '@/stores/index'
 import { M } from 'motion-v/es'
 interface Item {
   image: string
@@ -59,7 +60,7 @@ interface Item {
   badgeText?: string
   id: number
 }
-
+const store = Player()
 const items = ref<Item[]>([])
 
 // 布局配置：两行 * cols 每页
@@ -72,12 +73,12 @@ const currentPage = ref(0)
 onMounted(async () => {
   try {
     const res = await HighQualityMusicList()
-    items.value = (res || []).map((music: any) => ({
-      image: music.coverImgUrl,
-      title: music.name,
-      subtitle: (music.artists || []).map((a: any) => a.name).join('、'),
-      badgeText: music.tag || '每日推荐',
-      id: music.id,
+    items.value = (res || []).map((MusicList: any) => ({
+      image: MusicList.coverImgUrl,
+      title: MusicList.name,
+      subtitle: (MusicList.artists || []).map((a: any) => a.name).join('、'),
+      badgeText: MusicList.tag || '每日推荐',
+      id: MusicList.id,
     }))
   } catch (err) {
     console.error('MusicList failed:', err)
@@ -105,8 +106,60 @@ function next() {
 function goto(i: number) {
   currentPage.value = i
 }
-function play(item: Item) {
-  PlayMusicFromList(item)
+async function play(item: Item) {
+  try {
+    if (!item?.id) {
+      console.warn('play: missing item.id', item)
+      return
+    }
+
+    // 注意：以对象形式传参（避免 toFormData 报错）
+    const idRes: any = await MusicIdList({ id: item.id })
+    console.log('MusicIdList response:', idRes)
+
+    // 从响应中提取 id 列表（根据你的后端结构调整）
+    let ids: number[] = []
+    if (Array.isArray(idRes)) {
+      ids = idRes.map((v: any) => (typeof v === 'object' ? (v.id ?? v) : v))
+    } else if (Array.isArray(idRes?.ids)) {
+      ids = idRes.ids.map((v: any) => (typeof v === 'object' ? (v.id ?? v) : v))
+    } else if (Array.isArray(idRes?.data)) {
+      ids = idRes.data.map((v: any) => (typeof v === 'object' ? (v.id ?? v) : v))
+    } else if (idRes?.id) {
+      ids = [idRes.id]
+    }
+
+    if (!ids.length) {
+      console.error('No track ids returned from MusicIdList', idRes)
+      return
+    }
+
+    // 把标准化的 id 列表加入播放器
+    store.addWholePlaylist(ids)
+
+    // 取第一首，先获取可播放 url
+    const firstId = ids[0]
+    const urlRes: any = await MusicUrl({ id: firstId })
+    console.log('MusicUrl response:', urlRes)
+
+    // 从 urlRes 中取到可播放地址（根据实际返回结构调整）
+    const playUrl = urlRes[0].url
+    console.log('playUrl:', playUrl)
+    if (!playUrl) {
+      console.error('No playable url returned', urlRes)
+      return
+    }
+
+    // 调用播放（如果 store.playcurrentSong 支持传 url，可直接传；否则按你现有逻辑处理）
+    store.playcurrentSong({
+      playUrl
+    })
+
+    console.log('isplaying', store.isplaying)
+  } catch (err) {
+    console.error('play failed:', err)
+  }
+}
 </script>
 
 <style scoped>

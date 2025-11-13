@@ -7,6 +7,6 @@ export const GetMusicFromList = async (params) => {
   }).then((res) => res.data);
 }
 // 获取歌单内的音乐列表
-export const MusicId = async (params) => {
+export const MusicIdList = async (params) => {
     return await GetMusicFromList(params).then((data)=>data.privileges)
 }
