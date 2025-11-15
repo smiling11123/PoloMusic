@@ -1,10 +1,25 @@
 <template>
   <div class="touchbar" role="region" aria-label="player touchbar">
     <div class="left">
-      <img v-if="cover" :src="cover" alt="cover" class="cover" />
+      <div class="cover-wrap" v-if="store.currentSong">
+        <img :src="store.currentSongDetial.cover" alt="cover" class="cover" />
+        <button class="Lricy" src="">
+          <svg
+            class="coin"
+            xmlns="http://www.w3.org/2000/svg"
+            xmlns:xlink="http://www.w3.org/1999/xlink"
+            viewBox="0 0 320 512"
+          >
+            <path
+              d="M177 159.7l136 136c9.4 9.4 9.4 24.6 0 33.9l-22.6 22.6c-9.4 9.4-24.6 9.4-33.9 0L160 255.9l-96.4 96.4c-9.4 9.4-24.6 9.4-33.9 0L7 329.7c-9.4-9.4-9.4-24.6 0-33.9l136-136c9.4-9.5 24.6-9.5 34-.1z"
+              fill="currentColor"
+            ></path>
+          </svg>
+        </button>
+      </div>
       <div class="meta">
-        <div class="title">{{ title }}</div>
-        <div class="artist">{{ artist }}</div>
+        <div class="title">{{ store.currentSongDetial.name }}</div>
+        <div class="artist">{{ store.currentSongDetial.artist }}</div>
       </div>
     </div>
 
@@ -12,7 +27,7 @@
       <div class="controls">
         <button class="btn" @click="prev">⏮</button>
         <button class="btn play" @click="togglePlay">
-          <span v-if="isplaying">⏸</span>
+          <span v-if="store.isplaying">⏸</span>
           <span v-else>▶</span>
         </button>
         <button class="btn" @click="next">⏭</button>
@@ -47,16 +62,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { Player } from '@/stores/index'
+import { GetMusicDetail } from '@/api/GetMusic'
 
 const store = Player()
 
 const audio = store.audio // 复用 store 中的 Audio 实例
-
-const isplaying = computed(() => !!store.isplaying)
-const currentSong = computed(() => store.currentSong ?? {})
-const cover = computed(() => currentSong.value?.cover || currentSong.value?.image || '')
-const title = computed(() => currentSong.value?.name || currentSong.value?.title || '未播放')
-const artist = computed(() => currentSong.value?.artist || currentSong.value?.subtitle || '')
 
 const currentTime = ref(0)
 const duration = ref(0)
@@ -107,22 +117,7 @@ function formatTime(s = 0) {
 }
 
 function togglePlay() {
-  if (!audio) return
-  if (store.isplaying) {
-    audio.pause()
-    store.isplaying = false
-  } else {
-    // 如果 currentSong 没有 url，store.playNextSong / store.playcurrentSong 应负责拉取 url
-    audio
-      .play()
-      .then(() => {
-        store.isplaying = true
-      })
-      .catch((e) => {
-        console.error('play failed', e)
-        store.isplaying = false
-      })
-  }
+  store.togglePlay()
 }
 
 function onSeek() {
@@ -179,6 +174,52 @@ function next() {
   min-width: 220px;
   max-width: 320px;
 }
+/* 封面容器 - 相对定位 */
+.cover-wrap {
+  position: relative;
+  width: 48px;
+  height: 48px;
+
+  /* 悬停时显示按钮 */
+  &:hover .Lricy {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 歌词按钮 - 绝对定位到右下角 */
+.Lricy {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  padding: 4px;
+
+  /* 默认隐藏 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.3s ease;
+
+  /* 样式美化 */
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  backdrop-filter: blur(2px);
+
+  /* 图标颜色 */
+  color: white;
+
+  /* 悬停放大 */
+  &:hover {
+    background: rgba(0, 0, 0, 0.8);
+    transform: scale(1.1);
+  }
+}
 .cover {
   width: 48px;
   height: 48px;
@@ -186,6 +227,7 @@ function next() {
   object-fit: cover;
   background: #222;
 }
+
 .meta {
   overflow: hidden;
 }
@@ -212,14 +254,13 @@ function next() {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
   align-items: center;
 }
 .controls {
   display: flex;
   gap: 10px;
   align-items: center;
-  margin-bottom: 4px;
+  margin-top: 7px;
 }
 .btn {
   background: transparent;

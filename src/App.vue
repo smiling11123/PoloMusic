@@ -8,7 +8,13 @@
   <div class="mainpage">
     <div style="height: 100%">
       <!-- 外层：Pane 1 和右侧区域 -->
-      <n-split direction="horizontal" :default-size="0.2" :max="0.33" :min="0.15" :resize-trigger-size="1">
+      <n-split
+        direction="horizontal"
+        :default-size="0.2"
+        :max="0.33"
+        :min="0.15"
+        :resize-trigger-size="1"
+      >
         <!-- Pane 1: 左侧，最多 1/3 -->
         <template #1>
           <div class="scroll-pane">
@@ -30,7 +36,7 @@
             <!-- Pane 3: 右侧，可隐藏 -->
             <template #2>
               <div class="Lricy" v-show="ShowLricy">
-                <Lricypage></Lricypage>
+                <MusicList></MusicList>
               </div>
             </template>
           </n-split>
@@ -53,6 +59,7 @@ import Lricypage from '@/components/lricypage.vue'
 import Musichub from '@/components/musichub.vue'
 import Topbar from '@/components/topbar.vue'
 import Touchbar from './components/touchbar.vue'
+import MusicList from './components/MusicList.vue'
 
 const ShowLricy = ref(true)
 </script>

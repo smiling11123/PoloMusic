@@ -11,3 +11,9 @@ export const MusicUrl = async (params) => {
   return await GetMusicUrl(params).then((data)=>data.data);
 }
 
+export const GetMusicDetail = async (params) => {
+  return request({
+    url: "/song/detail",
+    params,
+  }).then((res) => res.data);
+}

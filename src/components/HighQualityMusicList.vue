@@ -18,7 +18,7 @@
       <div class="slides" :style="{ transform: `translateX(-${currentPage * 100}%)` }">
         <div v-for="(page, pi) in pages" :key="pi" class="slide">
           <div v-for="(item, idx) in page" :key="idx" class="hq-item">
-            <div class="hq-card" @click="play(item)">
+            <div class="hq-card" @click="TurnIn() /*做一个页面跳转 */">
               <img :src="item.image" alt="" class="hq-img" />
               <div class="hq-badge">{{ item.badgeText ?? '每日推荐' }}</div>
               <button class="play-btn" @click.stop="play(item)" aria-label="play">
@@ -106,6 +106,10 @@ function next() {
 function goto(i: number) {
   currentPage.value = i
 }
+function TurnIn() {
+  // 做一个页面跳转
+  console.log('跳转到推荐页面')
+}
 async function play(item: Item) {
   try {
     if (!item?.id) {
@@ -139,20 +143,11 @@ async function play(item: Item) {
 
     // 取第一首，先获取可播放 url
     const firstId = ids[0]
-    const urlRes: any = await MusicUrl({ id: firstId })
-    console.log('MusicUrl response:', urlRes)
-
-    // 从 urlRes 中取到可播放地址（根据实际返回结构调整）
-    const playUrl = urlRes[0].url
-    console.log('playUrl:', playUrl)
-    if (!playUrl) {
-      console.error('No playable url returned', urlRes)
-      return
-    }
+    console.log('First track id to play:', firstId)
 
     // 调用播放（如果 store.playcurrentSong 支持传 url，可直接传；否则按你现有逻辑处理）
     store.playcurrentSong({
-      playUrl
+      firstId,
     })
 
     console.log('isplaying', store.isplaying)
