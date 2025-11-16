@@ -25,21 +25,25 @@
         <!-- 右侧区域 -->
         <template #2>
           <!-- 内层：Pane 2 和 Pane 3 -->
-          <n-split direction="horizontal" :default-size="0.8" :min="0.5" :max="0.85">
+          <n-split direction="horizontal" :default-size="0.8" :min="0.5" :max="0.85" v-if="pagecontroler.ShowPlayList">
             <!-- Pane 2: 中间，最小 1/3，最大 2/3 -->
             <template #1>
               <div class="scroll-pane">
-                <Musichub></Musichub>
+                <router-view></router-view>
               </div>
             </template>
 
             <!-- Pane 3: 右侧，可隐藏 -->
-            <template #2>
-              <div class="Lricy" v-show="ShowLricy">
-                <MusicList></MusicList>
+            <template #2 >
+              <div class="Lricy">
+                <PlayList></PlayList>
               </div>
             </template>
           </n-split>
+          <div v-else class="scroll-pane">
+            <RouterView></RouterView>
+          </div>
+
         </template>
       </n-split>
     </div>
@@ -60,8 +64,9 @@ import Musichub from '@/components/musichub.vue'
 import Topbar from '@/components/topbar.vue'
 import Touchbar from './components/touchbar.vue'
 import MusicList from './components/MusicList.vue'
-
-const ShowLricy = ref(true)
+import { pagecontrol } from './stores/page'
+import PlayList from '@/components/playlist.vue'
+const pagecontroler = pagecontrol()
 </script>
 
 <style scoped>
@@ -124,7 +129,10 @@ const ShowLricy = ref(true)
   align-items: center;
   justify-content: center;
 }
-
+.Lricy {
+  height: 100%;
+  transition: opacity 0.3s ease;
+}
 /* 美化滚动条 */
 :deep(.scroll-pane::-webkit-scrollbar) {
   width: 6px;

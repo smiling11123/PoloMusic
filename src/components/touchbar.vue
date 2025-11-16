@@ -3,7 +3,7 @@
     <div class="left">
       <div class="cover-wrap" v-if="store.currentSong">
         <img :src="store.currentSongDetial.cover" alt="cover" class="cover" />
-        <button class="Lricy" src="">
+        <button class="Lricy" @click="ShowLricy()">
           <svg
             class="coin"
             xmlns="http://www.w3.org/2000/svg"
@@ -11,7 +11,13 @@
             viewBox="0 0 320 512"
           >
             <path
+              v-if="!pagecontroler.ShowLricy"
               d="M177 159.7l136 136c9.4 9.4 9.4 24.6 0 33.9l-22.6 22.6c-9.4 9.4-24.6 9.4-33.9 0L160 255.9l-96.4 96.4c-9.4 9.4-24.6 9.4-33.9 0L7 329.7c-9.4-9.4-9.4-24.6 0-33.9l136-136c9.4-9.5 24.6-9.5 34-.1z"
+              fill="currentColor"
+            ></path>
+            <path
+              v-else
+              d="M143 352.3L7 216.3c-9.4-9.4-9.4-24.6 0-33.9l22.6-22.6c9.4-9.4 24.6-9.4 33.9 0l96.4 96.4l96.4-96.4c9.4-9.4 24.6-9.4 33.9 0l22.6 22.6c9.4 9.4 9.4 24.6 0 33.9l-136 136c-9.2 9.4-24.4 9.4-33.8 0z"
               fill="currentColor"
             ></path>
           </svg>
@@ -51,6 +57,27 @@
     </div>
 
     <div class="right">
+      <div class="ShowPlayListButton">
+        <button class="ShowPlayList" @click="ShowPlayList()">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            xmlns:xlink="http://www.w3.org/1999/xlink"
+            viewBox="0 0 24 24"
+          >
+            <g
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M4 6h16"></path>
+              <path d="M8 12h8"></path>
+              <path d="M6 18h12"></path>
+            </g>
+          </svg>
+        </button>
+      </div>
       <div class="vol">
         <button class="mini" @click="muteToggle">{{ volume > 0 ? '🔊' : '🔈' }}</button>
         <input type="range" min="0" max="1" step="0.01" v-model.number="volume" @input="onVolume" />
@@ -63,9 +90,9 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { Player } from '@/stores/index'
 import { GetMusicDetail } from '@/api/GetMusic'
-
+import { pagecontrol } from '@/stores/page'
 const store = Player()
-
+const pagecontroler = pagecontrol()
 const audio = store.audio // 复用 store 中的 Audio 实例
 
 const currentTime = ref(0)
@@ -106,7 +133,12 @@ onMounted(() => {
 watch(volume, (v) => {
   if (audio) audio.volume = v
 })
-
+function ShowLricy() {
+  pagecontroler.isShowLricy()
+}
+function ShowPlayList() {
+  pagecontroler.isShowPlayList()
+}
 function formatTime(s = 0) {
   s = Math.floor(s) || 0
   const m = Math.floor(s / 60)
@@ -220,6 +252,35 @@ function next() {
     transform: scale(1.1);
   }
 }
+/* 修改按钮尺寸 */
+.ShowPlayList {
+  width: 20px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 0;
+
+  /* 添加过渡 */
+  transition: all 0.2s ease;
+
+  /* 悬停高亮 */
+  &:hover {
+    color: #ffffff; /* 2. 图标变色 */
+    transform: scale(1.1); /* 3. 放大效果 */
+  }
+
+  /* 点击反馈 */
+  &:active {
+    transform: scale(0.95);
+    color: #0bdc9a;
+  }
+}
+
 .cover {
   width: 48px;
   height: 48px;

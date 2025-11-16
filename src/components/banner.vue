@@ -6,15 +6,18 @@
       next-slide-style="transform: translateX(50%) translateZ(-800px);"
       style="height: 240px"
       :show-dots="false"
+      :autoplay="true"
+      :draggable="false"
     >
       <n-carousel-item
         :style="{ width: '60%' }"
         v-for="(banner, index) in BannerList"
         :key="index"
         :alt="banner.typeTitle"
+        
       >
         <!-- 圆角卡片包装 -->
-        <div class="carousel-item">
+        <div class="carousel-item" @click="TurnTo()">
           <img class="carousel-img" :src="banner.bigImageUrl" />
         </div>
       </n-carousel-item>
@@ -37,6 +40,9 @@ onMounted(async () => {
     BannerList.value = []
   }
 })
+function TurnTo() {
+  
+}
 </script>
 
 <style scoped>

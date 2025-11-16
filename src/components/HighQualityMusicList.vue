@@ -1,7 +1,22 @@
 <template>
   <div class="hq-wrap">
+    <!-- 修改 controls：绝对定位 + 箭头按钮 -->
     <div class="controls">
-      <button class="ctrl" @click="prev" :disabled="currentPage === 0">‹</button>
+      <div class="nav-arrows">
+        <button class="ctrl prev" @click="prev" :disabled="currentPage === 0" aria-label="上一页">
+          ‹
+        </button>
+        <button
+          class="ctrl next"
+          @click="next"
+          :disabled="currentPage === pageCount - 1"
+          aria-label="下一页"
+        >
+          ›
+        </button>
+      </div>
+
+      <!-- 圆点指示器 -->
       <div class="dots">
         <button
           v-for="(p, i) in pageCount"
@@ -9,16 +24,16 @@
           class="dot"
           :class="{ active: i === currentPage }"
           @click="goto(i)"
+          aria-label="第 {{ i + 1 }} 页"
         />
       </div>
-      <button class="ctrl" @click="next" :disabled="currentPage === pageCount - 1">›</button>
     </div>
 
     <div class="viewport">
       <div class="slides" :style="{ transform: `translateX(-${currentPage * 100}%)` }">
         <div v-for="(page, pi) in pages" :key="pi" class="slide">
           <div v-for="(item, idx) in page" :key="idx" class="hq-item">
-            <div class="hq-card" @click="TurnIn() /*做一个页面跳转 */">
+            <div class="hq-card" @click="TurnIn(item) /*做一个页面跳转 */">
               <img :src="item.image" alt="" class="hq-img" />
               <div class="hq-badge">{{ item.badgeText ?? '每日推荐' }}</div>
               <button class="play-btn" @click.stop="play(item)" aria-label="play">
@@ -53,6 +68,8 @@ import { HighQualityMusicList } from '@/api/GetHighQualityMusicList'
 import { MusicUrl } from '@/api/GetMusic'
 import { Player } from '@/stores/index'
 import { M } from 'motion-v/es'
+import { useRouter } from 'vue-router'
+const router = useRouter()
 interface Item {
   image: string
   title: string
@@ -64,8 +81,8 @@ const store = Player()
 const items = ref<Item[]>([])
 
 // 布局配置：两行 * cols 每页
-const rows = 2
-const cols = 3
+const rows = 1
+const cols = 4
 const itemsPerPage = rows * cols
 
 const currentPage = ref(0)
@@ -106,7 +123,12 @@ function next() {
 function goto(i: number) {
   currentPage.value = i
 }
-function TurnIn() {
+function TurnIn(item: Item) {
+  console.log(item.id)
+   router.push({
+    name: 'musiclist',
+    params: { id: item.id }
+  })
   // 做一个页面跳转
   console.log('跳转到推荐页面')
 }
@@ -116,7 +138,7 @@ async function play(item: Item) {
       console.warn('play: missing item.id', item)
       return
     }
-
+    console.log(typeof item.id)
     // 注意：以对象形式传参（避免 toFormData 报错）
     const idRes: any = await MusicIdList({ id: item.id })
     console.log('MusicIdList response:', idRes)
@@ -161,35 +183,86 @@ async function play(item: Item) {
 .hq-wrap {
   width: 100%;
   box-sizing: border-box;
+  
+  /* 关键：相对定位作为悬停容器 */
+  position: relative;
+  
+  /* 悬停时显示箭头 */
+  &:hover .nav-arrows .ctrl {
+    opacity: 1;
+  }
 }
 
-/* 顶部分页控制 */
+/* 顶部分页控制 - 绝对定位覆盖在视口上方 */
 .controls {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 6px 8px;
+  position: absolute;
+  top: 50%;             /* 垂直居中 */
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
+  height: 0;            /* 不占用空间 */
+  z-index: 10;          /* 确保在卡片上方 */
 }
+
+/* 左右箭头容器 */
+.nav-arrows {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* 左右箭头按钮 - 默认隐藏 */
 .ctrl {
-  background: transparent;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  
+  background: rgba(0, 0, 0, 0.6);
   border: none;
   color: #fff;
-  font-size: 20px;
-  width: 36px;
-  height: 36px;
+  font-size: 24px;      /* 箭头大一点 */
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
   cursor: pointer;
+  
+  /* 关键：默认透明 + 过渡 */
+  opacity: 0;
+  transition: opacity 0.3s ease, background 0.2s ease, transform 0.15s ease;
+  
+  /* 悬停效果 */
+  &:hover:not(:disabled) {
+    background: rgba(0, 0, 0, 0.8);
+    transform: translateY(-50%) scale(1.1);
+  }
+  
+  &:active:not(:disabled) {
+    transform: translateY(-50%) scale(0.95);
+  }
 }
+
+.ctrl.prev {
+  left: 12px;           /* 左侧箭头 */
+}
+
+.ctrl.next {
+  right: 12px;          /* 右侧箭头 */
+}
+
 .ctrl:disabled {
-  opacity: 0.3;
+  opacity: 0.1 !important; /* 禁用状态几乎看不见 */
   cursor: default;
 }
 
+/* 圆点指示器 - 移到下方（可选） */
 .dots {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
+  justify-content: center;
+  margin-top: 420px;    /* 根据卡片高度调整，放到视口下方 */
 }
+
 .dot {
   width: 10px;
   height: 10px;
@@ -197,7 +270,9 @@ async function play(item: Item) {
   border: none;
   background: #444;
   cursor: pointer;
+  transition: background 0.2s ease;
 }
+
 .dot.active {
   background: #0bdc9a;
 }
@@ -223,11 +298,11 @@ async function play(item: Item) {
   box-sizing: border-box;
   padding: 8px 6px;
   display: grid;
-  grid-template-columns: repeat(var(--cols), minmax(220px, 1fr));
+  grid-template-columns: repeat(var(--cols), minmax(100px, 1fr));
   gap: 16px;
   align-items: start;
   justify-items: center;
-  --cols: 3;
+  --cols: 4;
   max-width: 1200px; /* 整页最大宽度，防止卡片被无限拉伸 */
   margin: 0 auto; /* 居中 slide 内容 */
 }
@@ -302,6 +377,23 @@ async function play(item: Item) {
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
   cursor: pointer;
   transition: transform 0.12s ease;
+
+  /* 新增：默认隐藏 + 过渡 */
+  opacity: 0;
+  transform: scale(0.95); /* 稍微缩小点更有动感 */
+  transition:
+    opacity 0.3s ease,
+    transform 0.15s ease; /* 添加透明度过渡 */
+}
+/* 新增：卡片悬停时显示按钮 */
+.hq-card:hover .play-btn {
+  opacity: 1;
+  transform: scale(1); /* 恢复原始大小 */
+}
+
+/* 保持点击动画 */
+.play-btn:active {
+  transform: scale(0.98);
 }
 .play-btn:hover {
   transform: scale(1.05);
