@@ -1,61 +1,35 @@
-import { request } from "./request";
-import { MusicIdList } from "./GetMusicFromList";
+import { request, withCookie } from './request'
+
+//传入歌曲Id，获取歌曲的播放地址url
 export const GetMusicUrl = async (params) => {
   return request({
-    url: "/song/url",
-    params,
-  }).then((res) => res.data);
+    url: '/song/url',
+    params: withCookie(params),
+  }).then((res) => res.data)
 }
-
+//传入歌曲Id，获取解析出来的url
 export const MusicUrl = async (params) => {
-  return await GetMusicUrl(params).then((data)=>data.data);
+  return await GetMusicUrl(params).then((data) => data.data)
 }
-
+//传入歌曲Id，获取歌曲的详细信息
 export const GetMusicDetail = async (params) => {
   return request({
-    url: "/song/detail",
+    url: '/song/detail',
     params,
-  }).then((res) => res.data);
+  }).then((res) => res.data)
 }
 // 新增批量版本
 export const GetMusicUrls = async (params) => {
   return request({
-    url: "/song/url",
+    url: '/song/url',
     params: { id: params.ids.join(',') },
-  }).then((res) => res.data);
+  }).then((res) => res.data)
 }
 
-async function mapWithLimit(items, limit, fn) {
-  const results = []
-  const executing = []
-  
-  for (const item of items) {
-    const p = Promise.resolve().then(() => fn(item))
-    results.push(p)
-    
-    const e = p.then(() => executing.splice(executing.indexOf(e), 1))
-    executing.push(e)
-    
-    if (executing.length >= limit) {
-      await Promise.race(executing)
-    }
-  }
-  
-  return Promise.all(results)
-}
-
-export const GetMusicDetails = async (params) => {
-  const ids = Array.isArray(params) ? params : params?.ids
-  
-  if (!ids || ids.length === 0) return { songs: [] }
-
-  // 限制同时最多 10 个请求
-  const results = await mapWithLimit(ids, 10, id => 
-    request({
-      url: "/song/detail",
-      params: { id: String(id) },
-    }).then(res => res.data)
-  )
-
-  return { songs: results }
+//获取歌词
+export const GetMusicLyric = async (params) => {
+  return request({
+    url: '/lyric',
+    params,
+  }).then((res) => res.data)
 }

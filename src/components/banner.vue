@@ -48,6 +48,7 @@ function TurnTo() {
 <style scoped>
 /* 圆角卡片容器 */
 .carousel-item {
+  user-select: none;
   width: 100%;
   height: 100%;
   border-radius: 16px; /* 根据需要调整圆角 */

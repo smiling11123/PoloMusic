@@ -100,6 +100,7 @@ $transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .song-list {
+  user-select: none;
   :deep(.n-list-item) {
     padding: 0 !important;
     background: transparent;

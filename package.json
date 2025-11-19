@@ -73,6 +73,7 @@
   ],
   "dependencies": {
     "@neteaseapireborn/api": "^4.29.13",
+    "@vueuse/core": "^14.0.0",
     "element-plus": "^2.11.7",
     "gsap": "^3.13.0",
     "motion-v": "^1.7.4",

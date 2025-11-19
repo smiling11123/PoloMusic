@@ -15,5 +15,6 @@ import { RouterLink, RouterView } from 'vue-router'
   background-color: black;
   gap: 20vh;
   height: 50px;
+  
 }
 </style>

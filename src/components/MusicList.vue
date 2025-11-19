@@ -143,21 +143,10 @@ import { useRoute } from 'vue-router'
 import { Player } from '@/stores/index'
 import { NButton, NList, NListItem } from 'naive-ui'
 import { GetMusicFromList } from '@/api/GetMusicFromList'
-import { Song } from '@/stores/index'
+import { Song, Playlist } from '@/stores/index'
 
 
-interface Playlist {
-  id: number
-  name: string
-  coverImgUrl: string
-  description: string
-  playCount: number
-  trackCount: number
-  creator?: {
-    nickname: string
-    avatarUrl: string
-  }
-}
+
 
 // 状态管理
 const playerStore = Player()
@@ -299,6 +288,7 @@ function toggleDescription() {
   color: #000000;
   background: #121212;
   min-height: 100vh;
+  user-select: none;
 }
 
 // 骨架屏样式（同步更新为紧凑布局）

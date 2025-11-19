@@ -1,8 +1,7 @@
 <template>
-  <div class="Tittle">
-    <button class="HighQualityTittle">精品音乐></button>
-  </div>
-  
+    <div class="Tittle">
+        <button class="NewTittle">新歌单></button>
+    </div>
   <div class="hq-wrap">
     <!-- 修改 controls：绝对定位 + 箭头按钮 -->
     <div class="controls">
@@ -52,13 +51,13 @@
     </div>
   </div>
 </template>
-
 <script setup lang="ts">
 import { GetMusicFromList, MusicIdList } from '@/api/GetMusicFromList'
 import { ref, onMounted, computed } from 'vue'
-import { HighQualityMusicList } from '@/api/GetMusicList'
+import { NewMusicList } from '@/api/GetMusicList'
 import { MusicUrl } from '@/api/GetMusic'
 import { Player } from '@/stores/index'
+import { M } from 'motion-v/es'
 import { useRouter } from 'vue-router'
 import { pagecontrol } from '@/stores/page'
 const router = useRouter()
@@ -81,12 +80,12 @@ const currentPage = ref(0)
 
 onMounted(async () => {
   try {
-    const res = await HighQualityMusicList()
+    const res = await NewMusicList()
     items.value = (res || []).map((MusicList: any) => ({
       image: MusicList.coverImgUrl,
       title: MusicList.name,
       subtitle: (MusicList.artists || []).map((a: any) => a.name).join('、'),
-      badgeText: MusicList.tag || '每日推荐',
+      badgeText: MusicList.tags || '每日推荐',
       id: MusicList.id,
     }))
   } catch (err) {
@@ -179,7 +178,7 @@ async function play(item: Item) {
   .moreList{
   }
 }
-.HighQualityTittle {
+.NewTittle {
   font-size: 28px;
   color: #fff;
   margin-left: 30px;
@@ -195,6 +194,7 @@ async function play(item: Item) {
 }
 
 .controls {
+  user-select: none;
   position: absolute;
   top: 50%;
   left: 0;

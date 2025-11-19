@@ -3,7 +3,7 @@
     <div class="left">
       <div class="cover-wrap" v-if="store.currentSong">
         <img :src="store.currentSongDetial.cover" alt="cover" class="cover" />
-        <button class="Lricy" @click="ShowLricy()">
+        <button class="Lricy" @click="ShowLyric()">
           <svg
             class="coin"
             xmlns="http://www.w3.org/2000/svg"
@@ -11,7 +11,7 @@
             viewBox="0 0 320 512"
           >
             <path
-              v-if="!pagecontroler.ShowLricy"
+              v-if="!pagecontroler.ShowLyric"
               d="M177 159.7l136 136c9.4 9.4 9.4 24.6 0 33.9l-22.6 22.6c-9.4 9.4-24.6 9.4-33.9 0L160 255.9l-96.4 96.4c-9.4 9.4-24.6 9.4-33.9 0L7 329.7c-9.4-9.4-9.4-24.6 0-33.9l136-136c9.4-9.5 24.6-9.5 34-.1z"
               fill="currentColor"
             ></path>
@@ -133,8 +133,8 @@ onMounted(() => {
 watch(volume, (v) => {
   if (audio) audio.volume = v
 })
-function ShowLricy() {
-  pagecontroler.isShowLricy()
+function ShowLyric() {
+  pagecontroler.isShowLyric()
 }
 function ShowPlayList() {
   pagecontroler.isShowPlayList()
@@ -196,6 +196,7 @@ function next() {
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.6);
   z-index: 1000;
   box-sizing: border-box;
+  user-select: none;
 }
 
 /* 左侧封面与文字 */

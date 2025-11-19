@@ -1,21 +1,26 @@
 <template>
-  <div class="main">
+  <div class="Banner">
     <Banner></Banner>
-    <p class="HighQualityTittle">精品音乐</p>
+  </div>
+  <div>
     <HighQualityMusicList></HighQualityMusicList>
+  </div>
+  
+  <div>
+    <NewMusicList></NewMusicList>
+  </div>
+  <div>
+    <ArtistList></ArtistList>
   </div>
 </template>
 
 <script setup lang="ts">
-
+import ArtistList from './ArtistList.vue';
 import Banner from './banner.vue'
 import HighQualityMusicList from './HighQualityMusicList.vue'
+import NewMusicList from './NewMusicList.vue';
 </script>
 
 <style scoped>
-.HighQualityTittle {
-  font-size: 28px;
-  color: #fff;
-  margin-left: 30px;
-}
+
 </style>

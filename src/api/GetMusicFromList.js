@@ -1,5 +1,5 @@
 import { request } from "./request";
-// 获取歌单详情
+// 获取歌单详情，传入歌单Id
 export const GetMusicFromList = async (params) => {
   return request({
     url: "/playlist/detail",
