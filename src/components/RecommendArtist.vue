@@ -132,7 +132,7 @@ const next = () => { if (currentPage.value < pageCount.value - 1) currentPage.va
 
 // 跳转详情
 const TurnIn = (item: Item) => {
-  router.push({ name: 'musiclist', params: { id: item.id } })
+  router.push({ name: 'artist', params: { id: item.id } })
 }
 
 async function play(item: Item) {

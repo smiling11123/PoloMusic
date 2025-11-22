@@ -8,22 +8,18 @@
     <div v-else>
       <div class="playlist-header">
         <div class="cover-wrap">
-          <img :src="playlist.coverImgUrl" alt="歌单封面" class="cover" />
+          <img :src="ArtistDetail.coverImgUrl" alt="歌单封面" class="cover" />
         </div>
 
         <div class="info">
           <div class="title-row">
-            <h1 class="title">{{ playlist.name }}</h1>
-          </div>
-
-          <div class="creator-info" v-if="playlist.creator">
-            <img :src="playlist.creator.avatarUrl" class="avatar" />
-            <span class="name">{{ playlist.creator.nickname }}</span>
-            <span class="date">最近更新: {{ formatDate(playlist.updateTime) }}</span>
+            <h1 class="title">{{ ArtistDetail.name }}</h1>
           </div>
 
           <div class="description-wrapper">
-            <p class="description" :title="playlist.description">{{ playlist.description }}</p>
+            <p class="description" :title="ArtistDetail.description">
+              {{ ArtistDetail.description }}
+            </p>
           </div>
 
           <div class="actions">
@@ -32,10 +28,6 @@
                 <path d="M8 5v14l11-7z" />
               </svg>
             </button>
-            <div class="stats-text">
-              歌曲数: {{ playlist.trackCount }} &nbsp;|&nbsp; 播放量:
-              {{ formatPlayCount(playlist.playCount) }}
-            </div>
           </div>
         </div>
       </div>
@@ -117,59 +109,91 @@ import { Player } from '@/stores/index'
 import { NButton } from 'naive-ui'
 import { GetMusicFromList } from '@/api/GetMusicFromList'
 import type { Song, Playlist } from '@/stores/index'
+import { GetArtist } from '@/api/Artist'
+import { GetMusicDetail } from '@/api/GetMusic'
 
 const playerStore = Player()
 const route = useRoute()
 const isLoading = ref(true)
 
-const playlist = ref<any>({
+const ArtistDetail = ref<any>({
   id: 0,
   name: '',
   coverImgUrl: '',
   description: '',
-  playCount: 0,
-  trackCount: 0,
-  creator: null,
-  updateTime: 0,
 })
 
 const songs = ref<Song[]>([])
 const currentSongId = computed(() => playerStore.currentSong || null)
 
-const MusicListId = computed(() => {
-  const id = route.params.id
-  return Array.isArray(id) ? Number(id[0]) : Number(id)
+const ArtistId = computed(() => {
+  const artistid = route.params.id
+  return Array.isArray(artistid) ? Number(artistid[0]) : Number(artistid)
 })
 
 async function loadPlaylistData() {
   isLoading.value = true
   try {
-    const id = MusicListId.value
-    if (!id) return
+    const arid = ArtistId.value
+    if (!arid) return
 
-    const res = await GetMusicFromList({ id })
-    const pl = res.playlist
-
-    playlist.value = {
+    const res = await GetArtist(arid)
+    const hotsongs = res.hotSongs
+    const pl = res.artist
+    const playlist = ref()
+    console.log(hotsongs)
+    console.log(pl)
+    ArtistDetail.value = {
       id: pl.id,
       name: pl.name,
-      coverImgUrl: pl.coverImgUrl,
-      description: pl.description || '暂无简介',
-      playCount: pl.playCount,
-      trackCount: pl.trackCount,
-      creator: pl.creator,
-      updateTime: pl.updateTime,
+      coverImgUrl: pl.picUrl,
+      description: pl.briefDesc || '暂无简介',
     }
-
-    songs.value = pl.tracks.map((track: any) => ({
-      id: track.id,
-      cover: track.al.picUrl,
-      name: track.name,
-      alia: track.alia, // 别名
-      album: track.al?.name || '未知专辑',
-      artist: track.ar?.map((a: any) => a.name).join(' / ') || '未知歌手',
-      duration: track.dt ? Math.floor(track.dt / 1000) : 0,
+    const songlist = hotsongs
+    playlist.value = songlist.map((song: any) => ({
+      id: song.id,
     }))
+    const idRes: any = playlist.value
+    console.log('MusicIdList response:', idRes)
+
+    // 从响应中提取 id 列表（根据你的后端结构调整）
+    let ids: number[] = []
+    if (Array.isArray(idRes)) {
+      ids = idRes.map((v: any) => (typeof v === 'object' ? (v.id ?? v) : v))
+    } else if (Array.isArray(idRes?.ids)) {
+      ids = idRes.ids.map((v: any) => (typeof v === 'object' ? (v.id ?? v) : v))
+    } else if (Array.isArray(idRes?.data)) {
+      ids = idRes.data.map((v: any) => (typeof v === 'object' ? (v.id ?? v) : v))
+    } else if (idRes?.id) {
+      ids = [idRes.id]
+    }
+    playlist.value = ids
+    try {
+      const songIds = playlist.value // 假设是 number[]
+      const results = await Promise.all(
+        songIds.map((id) =>
+          GetMusicDetail({ ids: id }) // 单个请求
+            .then((res) => res) // 提取数据
+            .catch((err) => {
+              console.error(`歌曲 ${id} 加载失败:`, err)
+              return null // 失败时返回null
+            }),
+        ),
+      )
+      songs.value = results
+        .filter(Boolean) // 移除null
+        .map((song) => ({
+          id: song.songs[0].id,
+          name: song.songs[0].name,
+          album: song.songs[0].al?.name || '未知专辑',
+          artist: song.songs[0].ar?.map((a) => a.name).join('/') || '未知艺术家',
+          duration: song.songs[0].dt ? Math.floor(song.songs[0].dt / 1000) : 0,
+          cover: song.songs[0].al?.picUrl || '',
+        }))
+    } catch (error) {
+      console.error('加载歌曲失败:', error)
+    } finally {
+    }
   } catch (err) {
     console.error(err)
   } finally {
@@ -179,7 +203,7 @@ async function loadPlaylistData() {
 
 onMounted(loadPlaylistData)
 watch(
-  () => MusicListId.value,
+  () => ArtistId.value,
   (v) => v && loadPlaylistData(),
 )
 
@@ -231,6 +255,7 @@ $primary: #0bdc9a;
   color: $text-main;
   font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  user-select: none;
 }
 
 // --- 头部 ---

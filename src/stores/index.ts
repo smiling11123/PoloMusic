@@ -141,7 +141,7 @@ export const Player = defineStore(
     const End = async () => {
       if (playFM) {
         const mappedFmSongs = ref()
-        if (currentSongIndex.value - currentSongList.value.length <= 3) {
+        if (currentSongIndex.value - playlist.value.length <= 3) {
           const fmRes = await GetPersonalFM()
           console.log(fmRes)
           const fmList = fmRes.data

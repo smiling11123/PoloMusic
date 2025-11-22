@@ -152,7 +152,7 @@ const onPaneResize = debounce((newSize) => {
 
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 /* ===== 基础布局不变 ===== */
 .Topbar {
   position: fixed;
@@ -208,6 +208,13 @@ const onPaneResize = debounce((newSize) => {
   overscroll-behavior: contain;
   scroll-behavior: smooth;
   contain: layout style paint;
+    &::-webkit-scrollbar {
+    display: none; 
+    width: 0 !important;
+    height: 0 !important;
+  }
+  scrollbar-width: none; 
+  -ms-overflow-style: none;
 }
 
 .scroll-pane::-webkit-scrollbar {
@@ -236,6 +243,13 @@ const onPaneResize = debounce((newSize) => {
   height: 100%;
   overflow-y: auto;
   overscroll-behavior: contain;
+  &::-webkit-scrollbar {
+    display: none; 
+    width: 0 !important;
+    height: 0 !important;
+  }
+  scrollbar-width: none; 
+  -ms-overflow-style: none; 
 }
 
 /* 滑入动画 */

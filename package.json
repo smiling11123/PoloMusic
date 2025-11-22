@@ -17,7 +17,7 @@
     "lint": "eslint . --fix --cache",
     "format": "prettier --write src/",
     "start": "electron .",
-    "electron:dev": "concurrently \"vite --mode development\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:dev": "concurrently \"vite --mode development\" \" node net/app.js \" \"wait-on http://localhost:3000 && electron .\"",
     "lint-fix": "eslint --fix \"**/*.{js,ts}\"",
     "prepare": "husky install",
     "pkgwin": "pkg . -t node18-win-x64 -C GZip -o bin/app --no-bytecode",

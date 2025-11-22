@@ -165,7 +165,7 @@ const next = async () => {
   console.log(store.playlist.length)
   const mappedFmSongs = ref()
   if(store.playFM){
-  if (store.currentSongIndex - store.currentSongList.length <= 3) {
+  if (store.currentSongIndex - store.playlist.length <= 3) {
     const fmRes = await GetPersonalFM()
     console.log(fmRes)
     const fmList = fmRes.data

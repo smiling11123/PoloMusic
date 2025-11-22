@@ -1,68 +1,75 @@
 <template>
   <div class="Show-PlayList" v-if="store.playlist.length">
     <div class="song-list-wrapper">
-      <n-list :show-divider="false" class="song-list">
-        <n-list-item
+      <ul class="song-list">
+        <li
           v-for="(song, index) in songs"
           :key="song.id"
           class="song-item"
           :class="{ playing: currentSongId === song.id }"
           @click="playSong(song, index)"
         >
-          <!-- 序号/播放按钮 -->
-          <template #prefix>
-            <div class="song-index">
-              <span class="index">{{ index + 1 }}</span>
-              <button class="play-btn" aria-label="播放">
+          <div class="item-content">
+            <div class="index-container">
+              <span class="index-num" v-if="currentSongId !== song.id">{{ index + 1 }}</span>
+              <div class="playing-icon" v-else>
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+
+            <div class="cover-container">
+              <img :src="song.cover + '?param=60y60'" alt="cover" loading="lazy" />
+              <div class="play-mask">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M8 5v14l11-7z" />
                 </svg>
-              </button>
+              </div>
             </div>
-          </template>
 
-          <!-- 左侧信息区（封面+歌曲信息） -->
-          <div class="leftinfo">
-            <div class="song-cover">
-              <img :src="song.cover + '?param=50y50'" alt="歌曲封面" />
+            <div class="info-container">
+              <div class="song-title" :title="song.name">
+                {{ truncateText(song.name, 9) }}
+              </div>
+              
+              <div class="song-meta">
+                <span class="artist" :title="song.artist">
+                  {{ truncateText(song.artist, 9) }}
+                </span>
+              </div>
             </div>
-            <div class="song-info">
-              <!-- ✅ 关键：添加 title 属性 -->
-              <div class="song-title" :title="song.name">{{ song.name }}</div>
-              <div class="song-artist" :title="song.artist">{{ song.artist }}</div>
-            </div>
+
+            <div class="duration">{{ formatTime(song.duration) }}</div>
           </div>
-
-
-          <!-- ✅ 关键：使用 suffix 插槽放置时长 -->
-          <template #suffix>
-            <div class="song-duration">{{ formatTime(song.duration) }}</div>
-          </template>
-        </n-list-item>
-      </n-list>
+        </li>
+      </ul>
     </div>
   </div>
+  
   <div class="Inshow-PlayList" v-else>
-    <p>暂无音乐列表</p>
+    <div class="empty-state">
+      <p>暂无播放列表</p>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { Player } from '@/stores/index'
-import { ref, computed, onMounted } from 'vue'
+import { computed } from 'vue'
 import type { Song } from '@/stores/index'
-import { NList, NListItem } from 'naive-ui'
+// 移除了 Naive UI 组件的引入
 
 const playerStore = Player()
 const store = Player()
 const currentSongId = computed(() => playerStore.currentSong)
-
 const songs = computed(() => playerStore.currentSongList)
 
+function truncateText(text: string, maxLength: number): string {
+  if (!text) return ''
+  return text.length > maxLength ? text.slice(0, maxLength) + '...' : text
+}
+
 function formatTime(seconds: number): string {
-  const m = Math.floor(seconds / 60)
-    .toString()
-    .padStart(2, '0')
+  const m = Math.floor(seconds / 60).toString().padStart(2, '0')
   const s = (seconds % 60).toString().padStart(2, '0')
   return `${m}:${s}`
 }
@@ -74,247 +81,225 @@ function playSong(song: Song, index: number) {
 </script>
 
 <style scoped lang="scss">
-// 颜色变量
+// --- 变量定义 ---
 $primary-color: #0bdc9a;
-$bg-hover: rgba(84, 84, 84, 0.05);
-$bg-playing: rgba(0, 255, 150, 0.1);
-$text-primary: #ffffff;
-$text-secondary: rgba(255, 255, 255, 0.7);
-$transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+$bg-hover: rgba(255, 255, 255, 0.08);
+$bg-active: rgba(255, 255, 255, 0.12);
+$text-main: #ffffff;
+$text-sub: rgba(255, 255, 255, 0.5);
+$text-hover: #ffffff;
+$radius: 8px;
 
+// --- 滚动容器 ---
 .song-list-wrapper {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 0 16px;
-  max-height: 100vh;
-  overflow-y: auto;
-  
-  :deep(.n-list),
-  :deep(.n-list-item) {
-    background-color: transparent !important;
-  }
-  &::-webkit-scrollbar { width: 0; height: 0; }
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  
-}
-
-.song-list {
+  max-width: 100%;
+  height: 100%;
+  padding: 0 8px; // 给滚动条留一点内边距防止贴边
   user-select: none;
-  :deep(.n-list-item) {
-    padding: 0 !important;
-    background: transparent;
-    border-radius: 4px;
-    margin-bottom: 4px;
+  
+  // 允许 Y 轴滚动
+  overflow-y: auto; 
+  overflow-x: hidden;
 
-    &:hover {
-      background: $bg-hover;
-    }
+  // --- 隐藏滚动条核心代码 ---
+  // Chrome, Safari, Edge
+  &::-webkit-scrollbar {
+    display: none; 
+    width: 0 !important;
+    height: 0 !important;
+  }
+  // Firefox
+  scrollbar-width: none; 
+  // IE
+  -ms-overflow-style: none; 
+}
 
-    // ✅ 关键：让 suffix 区域正常显示
-    .n-list-item__suffix {
-      margin-left: auto;
-      flex-shrink: 0;
-      padding-left: 20px; // 与左侧保持间距
+// --- 列表样式 ---
+.song-list {
+  // 清除原生 ul 样式
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+// --- 列表项样式 ---
+.song-item {
+  display: block; // 确保 li 占满一行
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  border-radius: $radius;
+  margin-bottom: 4px;
+  transition: all 0.2s ease;
+  cursor: pointer; // 添加手型光标
+
+  // 悬停效果
+  &:hover {
+    background-color: $bg-hover;
+    .item-content {
+      .index-container .index-num { opacity: 0.5; }
+      .cover-container .play-mask { opacity: 1; }
     }
   }
+  
+  // 点击/激活态
+  &:active { transform: scale(0.99); }
 
-  .song-item {
-    // ✅ 关键：改用 flex 布局，更稳定可控
-    display: flex !important;
-    align-items: center;
-    gap: 0;
-    padding: 8px 12px;
-    transition: $transition;
-    cursor: pointer;
-    position: relative;
-
-    &.playing {
-      background: linear-gradient(90deg, rgba($primary-color, 0.1) 0%, transparent 100%);
-      border-left: 3px solid $primary-color;
-
-      .song-title { color: $primary-color; font-weight: 600; }
-      .index { color: $primary-color; font-weight: 600; }
-    }
-
-    // ✅ 序号区域
-    :deep(.n-list-item__prefix) {
-      width: 48px;
-      flex-shrink: 0;
-      margin-right: 0;
-    }
-
-    .song-index {
-      width: 48px;
-      height: 48px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-
-      .index {
-        font-size: 16px;
-        color: $text-secondary;
-        transition: $transition;
-        position: absolute;
-      }
-
-      .play-btn {
-        position: absolute;
-        opacity: 0;
-        background: none;
-        border: none;
-        color: $text-primary;
-        cursor: pointer;
-        padding: 8px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: $transition;
-        transform: scale(0.9);
-
-        &:hover {
-          background: rgba(255, 255, 255, 0.1);
-          transform: scale(1);
-        }
-
-        svg {
-          width: 16px;
-          height: 16px;
-          filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
-        }
-      }
-    }
-
-    &:hover .song-index {
-      .index { opacity: 0; }
-      .play-btn { opacity: 1; transform: scale(1); }
-    }
-
-    // ✅ 左侧信息区（封面+歌曲信息）
-    .leftinfo {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      // ✅ 关键：允许收缩
-      min-width: 0;
-      flex: 1;
-    }
-
-    .song-cover {
-      width: 44px;
-      height: 44px;
-      border-radius: 4px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-      flex-shrink: 0;
-
-      img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: $transition;
-
-        &:hover { transform: scale(1.05); }
-      }
-    }
-
-    // ✅ 歌曲信息（歌名+歌手）
-    .song-info {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      // ✅ 关键三重保险
-      min-width: 0;          // 1. 允许flex item收缩
-      max-width: 100%;       // 2. 限制最大宽度
-      flex: 1;              // 3. 占据剩余空间
-
-      .song-title {
-        color: $text-primary;
-        font-size: 14px;
-        font-weight: 400;
-        line-height: 1.4;
-        // ✅ 省略号四件套
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        display: block;
-        max-width: 100%;
-      }
-
-      .song-artist {
-        color: $text-secondary;
-        font-size: 12px;
-        line-height: 1.2;
-        // ✅ 省略号四件套
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        display: block;
-        max-width: 100%;
-      }
-    }
+  // 播放中状态
+  &.playing {
+    background-color: $bg-active;
     
-    // 专辑
-    .song-album {
-      color: $text-secondary;
-      font-size: 13px;
-      width: 120px;
-      flex-shrink: 0;
-      // ✅ 关键：允许收缩
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      margin: 0 20px;
+    .song-title {
+      color: $primary-color;
+      font-weight: 600;
     }
+    .index-num { display: none; }
+  }
+}
 
-    // ✅ 时长（在 suffix 插槽中）
-    .song-duration {
-      color: $text-secondary;
-      font-size: 12px;
-      font-variant-numeric: tabular-nums;
-      // ❌ 移除所有绝对定位样式
-      // ✅ 确保不收缩
-      flex-shrink: 0;
+// --- 内容布局 (保持原有逻辑) ---
+.item-content {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  width: 100%;
+  height: 64px;
+  box-sizing: border-box;
+}
+
+// 1. 序号
+.index-container {
+  width: 30px;
+  margin-right: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+  
+  .index-num {
+    color: $text-sub;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .playing-icon {
+    display: flex;
+    align-items: flex-end;
+    height: 14px;
+    gap: 2px;
+    span {
+      width: 2px;
+      background-color: $primary-color;
+      animation: sound-wave 1s infinite ease-in-out;
+      &:nth-child(1) { height: 60%; animation-delay: 0s; }
+      &:nth-child(2) { height: 100%; animation-delay: 0.2s; }
+      &:nth-child(3) { height: 50%; animation-delay: 0.4s; }
     }
   }
 }
 
+@keyframes sound-wave {
+  0%, 100% { height: 30%; }
+  50% { height: 100%; }
+}
+
+// 2. 封面
+.cover-container {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  margin-right: 16px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block; // 消除图片底部幽灵间隙
+  }
+
+  .play-mask {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    
+    svg {
+      width: 20px;
+      height: 20px;
+      color: #fff;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    }
+  }
+}
+
+// 3. 信息区
+.info-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  gap: 4px;
+
+  .song-title {
+    color: $text-main;
+    font-size: 15px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .song-meta {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    color: $text-sub;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    .artist {
+      &:hover { color: $text-hover; cursor: pointer; text-decoration: underline; }
+    }
+  }
+}
+
+// 4. 时长
+.duration {
+  font-size: 13px;
+  color: $text-sub;
+  font-variant-numeric: tabular-nums;
+  margin-left: 16px;
+  flex-shrink: 0;
+}
+
+// --- 空状态 ---
 .Inshow-PlayList {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 200px;
-  color: $text-secondary;
-  font-size: 14px;
-}
-
-// 响应式设计
-@media (max-width: 768px) {
-  .song-list .song-item {
-    .leftinfo { flex: 1; }
-    
-    // 隐藏专辑
-    .song-album { display: none !important; }
+  height: 300px;
+  
+  .empty-state {
+    text-align: center;
+    color: $text-sub;
+    p { margin: 0; }
   }
 }
 
-@media (max-width: 480px) {
-  .song-list .song-item {
-    .song-cover {
-      width: 36px;
-      height: 36px;
-    }
-
-    .song-title { font-size: 13px; }
-    .song-artist { font-size: 11px; }
-    
-    // ✅ 移除隐藏时长的规则
-    .song-duration {
-      font-size: 11px;
-    }
-  }
+// --- 响应式 ---
+@media (max-width: 600px) {
+  .item-content { padding: 8px; height: 60px; }
+  .cover-container { width: 40px; height: 40px; margin-right: 12px; }
 }
 </style>

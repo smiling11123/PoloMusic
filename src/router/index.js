@@ -1,5 +1,5 @@
 import Homepage from '@/components/HomePage.vue'
-import Artist from '@/components/RecommendArtist.vue'
+import Artist from '@/components/Artist.vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import MusicList from '@/components/MusicList.vue'
 import Musichub from '@/components/MusicHub.vue'
@@ -12,8 +12,8 @@ const routes = [
     component: Musichub,
   },
   {
-    path: '/artist',
-    name: 'Artist',
+    path: '/artist/:id',
+    name: 'artist',
     component: Artist,
   },
   {

@@ -127,7 +127,7 @@ const dosearch = async () => {
 .topbar .right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 .explore{
   -webkit-app-region: no-drag;
