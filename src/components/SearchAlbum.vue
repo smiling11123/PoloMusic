@@ -1,15 +1,44 @@
 <template>
   <div class="hq-container">
-    
     <div class="header-row">
       <h2 class="section-title">专辑</h2>
-      
+
       <div class="nav-controls" v-if="pageCount > 1">
-        <button class="ctrl-btn prev" @click="prev" :disabled="currentPage === 0" aria-label="上一页">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        <button
+          class="ctrl-btn prev"
+          @click="prev"
+          :disabled="currentPage === 0"
+          aria-label="上一页"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
         </button>
-        <button class="ctrl-btn next" @click="next" :disabled="currentPage === pageCount - 1" aria-label="下一页">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        <button
+          class="ctrl-btn next"
+          @click="next"
+          :disabled="currentPage === pageCount - 1"
+          aria-label="下一页"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
         </button>
       </div>
     </div>
@@ -17,10 +46,9 @@
     <div class="viewport">
       <div class="slides" :style="{ transform: `translateX(-${currentPage * 100}%)` }">
         <div v-for="(page, pi) in pages" :key="pi" class="slide">
-          
           <div v-for="(item, idx) in page" :key="item.id" class="hq-item">
             <div class="hq-card" @click="TurnIn(item)">
-              <img :src="item.image" alt="" class="hq-img" loading="lazy" />  
+              <img :src="item.image" alt="" class="hq-img" loading="lazy" />
               <button class="play-btn" @click.stop="play(item)">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
                   <path d="M8 5v14l11-7z" />
@@ -30,11 +58,11 @@
 
             <div class="meta">
               <div class="meta-title">{{ item.title }}</div>
-              </div>
+            </div>
           </div>
 
           <div
-            v-for="n in (itemsPerPage - page.length)"
+            v-for="n in itemsPerPage - page.length"
             :key="'ph-' + n"
             class="hq-item placeholder"
           />
@@ -99,7 +127,7 @@ watch(
       fetchData(newKeyword)
     }, 300)
   },
-  { immediate: true } // 立即执行一次以处理组件挂载时的初始值
+  { immediate: true }, // 立即执行一次以处理组件挂载时的初始值
 )
 // 监听 resize
 onMounted(() => {
@@ -120,14 +148,14 @@ const itemsPerPage = computed(() => currentCols.value * 1)
 watchEffect(() => {
   if (currentCols.value) {
     // 可选：重置页码，或者重新计算当前页码使其对应当前的item
-    // currentPage.value = 0 
+    // currentPage.value = 0
   }
 })
 
 // 数据获取
 const fetchData = async (Keyword) => {
   try {
-    const res = await GetSearchData({keyword: Keyword, type: 10, limit: 10})
+    const res = await GetSearchData({ keyword: Keyword, type: 10, limit: 10 })
     items.value = (res.result.albums || []).map((m: any) => ({
       image: m.picUrl,
       title: m.name,
@@ -143,7 +171,7 @@ const pages = computed(() => {
   const result: Item[][] = []
   // 必须要保证 items.value 存在
   if (!items.value.length) return []
-  
+
   for (let i = 0; i < items.value.length; i += itemsPerPage.value) {
     result.push(items.value.slice(i, i + itemsPerPage.value))
   }
@@ -153,8 +181,12 @@ const pages = computed(() => {
 const pageCount = computed(() => pages.value.length)
 
 // 翻页逻辑
-const prev = () => { if (currentPage.value > 0) currentPage.value-- }
-const next = () => { if (currentPage.value < pageCount.value - 1) currentPage.value++ }
+const prev = () => {
+  if (currentPage.value > 0) currentPage.value--
+}
+const next = () => {
+  if (currentPage.value < pageCount.value - 1) currentPage.value++
+}
 
 // 跳转详情
 const TurnIn = (item: Item) => {
@@ -163,6 +195,8 @@ const TurnIn = (item: Item) => {
 
 async function play(item: Item) {
   try {
+    store.playFM = false
+    store.playnormal = true
     if (!item?.id) {
       console.warn('play: missing item.id', item)
       return
@@ -360,7 +394,7 @@ $card-gap: 20px; // 卡片间距
   transform: translate(0, 10px); // 默认向下偏移一点
   transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  
+
   &:hover {
     transform: scale(1.1) !important;
     background: rgba(255, 255, 255, 0.2);
@@ -391,24 +425,35 @@ $card-gap: 20px; // 卡片间距
 
 /* 大屏 */
 @media (min-width: 1401px) {
-  .slide { grid-template-columns: repeat(5, 1fr); }
+  .slide {
+    grid-template-columns: repeat(5, 1fr);
+  }
 }
 
 /* 中屏 */
 @media (max-width: 1400px) and (min-width: 1101px) {
-  .slide { grid-template-columns: repeat(4, 1fr); }
+  .slide {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 /* 平板 */
 @media (max-width: 1100px) and (min-width: 769px) {
-  .slide { grid-template-columns: repeat(3, 1fr); }
+  .slide {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 /* 手机 */
 @media (max-width: 768px) {
-  .slide { grid-template-columns: repeat(2, 1fr); }
-  
+  .slide {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   // 手机端隐藏左右切换按钮，或者改小
-  .ctrl-btn { width: 28px; height: 28px; }
+  .ctrl-btn {
+    width: 28px;
+    height: 28px;
+  }
 }
 </style>

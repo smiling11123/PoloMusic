@@ -4,13 +4,9 @@
 
     <div class="cards-grid">
       <div class="card daily-card" v-if="dailyCover">
-        <div
-          class="bg-image"
-          @click="handleDailyClick"
-          :style="{ backgroundImage: `url(${dailyCover})` }"
-        ></div>
+        <div class="bg-image" :style="{ backgroundImage: `url(${dailyCover})` }"></div>
 
-        <div class="overlay"></div>
+        <div class="overlay" @click="handleDailyClick"></div>
 
         <div class="daily-content">
           <span class="calendar-text">📅 {{ currentDay }}</span>
@@ -36,7 +32,7 @@
           </div>
 
           <div class="fm-controls">
-            <button class="control-btn sm" @click.stop="handleDislike">
+            <button class="control-btn sm" @click.stop="handleDislike(player.currentSongDetial.id)">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                 <path
                   d="M15.5 4l-1 5H22l-2 10H6v-9l6-6 3.5 4zM4 19h2v-9H4v9z"
@@ -101,7 +97,7 @@
 import { GetDailyRecommendMusic, GetNextPersonalFM, GetPersonalFM } from '@/api/GetMusicList'
 import { ref, onMounted } from 'vue'
 import { Song, Player } from '@/stores/index'
-import { pl, tr } from 'element-plus/es/locale'
+import router from '@/router'
 
 interface Item {
   image: string
@@ -154,8 +150,8 @@ onMounted(async () => {
 })
 async function play() {
   const idRes: any = mappedDailySongs.value
-  console.log('MusicIdList response:', idRes)
-
+  player.playnormal = true
+  player.playFM = false
   // 从响应中提取 id 列表（根据你的后端结构调整）
   let ids: number[] = []
   if (Array.isArray(idRes)) {
@@ -178,7 +174,6 @@ async function play() {
 
   // 取第一首，先获取可播放 url
   const firstId = ids[0]
-  console.log('First track id to play:', firstId)
 
   // 调用播放（如果 store.playcurrentSong 支持传 url，可直接传；否则按你现有逻辑处理）
   player.playcurrentSong({
@@ -189,11 +184,10 @@ async function play() {
 }
 // --- Methods ---
 const handleDailyClick = () => {
-  console.log('跳转到每日推荐详情页')
+  router.push({ name: 'DailyRecommendMusic' })
 }
 const playFM = () => {
   const idRes: any = mappedFmSongs.value
-  console.log('MusicIdList response:', idRes)
 
   // 从响应中提取 id 列表（根据你的后端结构调整）
   let ids: number[] = []
@@ -216,7 +210,6 @@ const playFM = () => {
 
   // 取第一首，先获取可播放 url
   const firstId = ids[0]
-  console.log('First track id to play:', firstId)
 
   // 调用播放（如果 store.playcurrentSong 支持传 url，可直接传；否则按你现有逻辑处理）
   player.playcurrentSong({
@@ -278,8 +271,46 @@ const handleNext = async () => {
   console.log('FM下一首')
 }
 
-const handleDislike = () => {
-  console.log('FM不喜欢')
+const handleDislike = async (musicid) => {
+  player.removeSongFromPlaylist(musicid)
+  //const nextdata = GetNextPersonalFM()
+  //console.log(nextdata)
+  console.log(player.currentSongList.length)
+  console.log(player.playlist.length)
+  if (player.currentSongIndex - player.playlist.length <= 3) {
+    const fmRes = await GetNextPersonalFM(musicid)
+    console.log(fmRes)
+    const fmList = fmRes.data
+    mappedFmSongs.value = fmList.map((song: any) => ({
+      id: song.id,
+      name: song.name,
+      album: song.album?.name,
+      artist: song.artists?.[0]?.name,
+      duration: Math.floor(song.duration / 1000),
+      cover: song.album?.picUrl,
+    }))
+    const idRes: any = mappedFmSongs.value
+    console.log('MusicIdList response:', idRes)
+
+    // 从响应中提取 id 列表（根据你的后端结构调整）
+    let ids: number[] = []
+    if (Array.isArray(idRes)) {
+      ids = idRes.map((v: any) => (typeof v === 'object' ? (v.id ?? v) : v))
+    } else if (Array.isArray(idRes?.ids)) {
+      ids = idRes.ids.map((v: any) => (typeof v === 'object' ? (v.id ?? v) : v))
+    } else if (Array.isArray(idRes?.data)) {
+      ids = idRes.data.map((v: any) => (typeof v === 'object' ? (v.id ?? v) : v))
+    } else if (idRes?.id) {
+      ids = [idRes.id]
+    }
+
+    if (!ids.length) {
+      console.error('No track ids returned from MusicIdList', idRes)
+      return
+    }
+    player.addSongsToPlaylist(ids)
+  }
+  console.log('FM下一首')
 }
 </script>
 

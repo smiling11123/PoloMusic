@@ -4,9 +4,9 @@
 
 基于vue3 + Electron的音乐播放器，数据由第三方网易云api获取。
 
-![image-20251123101105521](D:\VSCODE\yesplaymusic\MusicPlayer\Img\main.png)
+![image-20251123101105521](Img/main.png)
 
-![image-20251123101128357](D:\VSCODE\yesplaymusic\MusicPlayer\Img\search.png)
+![image-20251123101128357](Img/search.png)
 
 ![image-20251122090317523](Img/Lyric.png)
 

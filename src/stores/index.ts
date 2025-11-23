@@ -1,6 +1,5 @@
 import { MusicUrl, GetMusicDetail, GetMusicLyric } from '@/api/GetMusic'
 import { defineStore } from 'pinia'
-import { useLocalStorage } from '@vueuse/core'
 import { computed, ComputedRef, ref } from 'vue'
 import { GetPersonalFM } from '@/api/GetMusicList'
 export interface Song {
@@ -47,20 +46,14 @@ export const Player = defineStore(
     const playnormal = ref(true)
     const playFM = ref(false)
     const playlist = ref<number[]>([]) // 播放列表
+    const playmodel = ref('')
     const currentSong = ref<number | null>(null) // 当前播放的歌曲
     const currentSongUrl = ref<String | null>(null) //上次播放位置
     const currentSongTime = ref<number>(0)
     const currentSongLyric = ref<String>(null)
     const currentSongTLyric = ref<String>(null)
     const useCookie = ref<String | null>(null)
-    const currentSongDetial = ref({
-      id: null,
-      name: null,
-      artist: null,
-      cover: null,
-      duration: null,
-      album: null,
-    }) // 当前播放歌曲的详细信息
+    const currentSongDetial = ref<SongItem>(null)
 
     const currentSongList = ref<SongItem[]>([])
 
@@ -94,7 +87,6 @@ export const Player = defineStore(
     }
     const playcurrentSong = async (input) => {
       const id = input.firstId || input
-      console.log('Playing song with id:', id)
       isplaying.value = true // 设置播放状态为 true
       const urls = await MusicUrl({ id: id }) // 获取歌曲 URL
       const data = await GetMusicDetail({ ids: id }) // 获取歌曲详细信息
@@ -107,7 +99,7 @@ export const Player = defineStore(
       currentSongDetial.value = {
         id: detail.id,
         name: detail.name,
-        artist: detail.ar.map((artist) => artist.name).join(', '),
+        artists: detail.ar.map((ar: any) => ({ id: ar.id, name: ar.name })),
         cover: detail.al.picUrl,
         duration: detail.dt ? Math.floor(detail.dt / 1000) : 0,
         album: detail.al.name,
@@ -146,7 +138,6 @@ export const Player = defineStore(
             duration: song.songs[0].dt ? Math.floor(song.songs[0].dt / 1000) : 0,
             cover: song.songs[0].al?.picUrl || '',
           }))
-        console.log(currentSongList.value)
       } catch (error) {
         console.error('加载歌曲失败:', error)
       } finally {
@@ -157,7 +148,7 @@ export const Player = defineStore(
         const mappedFmSongs = ref()
         if (currentSongIndex.value - playlist.value.length <= 3) {
           const fmRes = await GetPersonalFM()
-          console.log(fmRes)
+
           const fmList = fmRes.data
           mappedFmSongs.value = fmList.map((song: any) => ({
             id: song.id,
@@ -168,7 +159,6 @@ export const Player = defineStore(
             cover: song.album?.picUrl,
           }))
           const idRes: any = mappedFmSongs.value
-          console.log('MusicIdList response:', idRes)
 
           // 从响应中提取 id 列表（根据你的后端结构调整）
           let ids: number[] = []
@@ -196,9 +186,6 @@ export const Player = defineStore(
         return
       }
       playlist.value.splice(next, 0, songid) // 添加歌曲到播放列表
-      console.log(playlist.value)
-      console.log(songid)
-      console.log(currentSongIndex.value)
       const res = await GetMusicDetail({ ids: songid })
       const song = res.songs[0]
       currentSongList.value.splice(next, 0, {
@@ -217,6 +204,7 @@ export const Player = defineStore(
     const removeSongFromPlaylist = (songId) => {
       const wasPlaying = currentSong.value === songId // 检查是否是当前播放的歌曲
       playlist.value = playlist.value.filter((song) => song !== songId) // 从播放列表中移除歌曲
+      loadPlaylistData()
       if (wasPlaying && playlist.value.length > 0) {
         playNextSong() // 如果移除的是当前播放的歌曲且播放列表不为空，切换到下一首
       } else if (playlist.value.length === 0) {
@@ -253,7 +241,30 @@ export const Player = defineStore(
       const currentIndex = currentSongIndex.value === -1 ? 0 : currentSongIndex.value
       const nextIndex = (currentIndex + 1) % playlist.value.length // 计算下一首歌曲索引
       const song = playlist.value[nextIndex]
+      console.log(playmodel.value)
+      if (playmodel.value === 'onlyone') {
+        const onlyonesong = playlist.value[currentIndex]
+        await playcurrentSong(onlyonesong)
+        return
+      } else if (playmodel.value === 'random') {
+        console.log('israndom')
+        let randomindex
+        do {
+          randomindex = Math.floor(Math.random() * playlist.value.length)
+        } while (playlist.value.includes(randomindex))
+        const randomsong = playlist.value[randomindex]
+        console.log(randomsong)
+        console.log(randomindex)
+        await playcurrentSong(randomsong)
+        return
+      }
       await playcurrentSong(song)
+    }
+    const randomplaymodel = () => {
+      playmodel.value = playmodel.value === 'random' ? 'normal' : 'random'
+    }
+    const onlyoneplaymodel = () => {
+      playmodel.value = playmodel.value === 'onlyone' ? 'normal' : 'onlyone'
     }
     const playPrevSong = async () => {
       if (playlist.value.length === 0) return // 如果播放列表为空，直接返回
@@ -342,6 +353,7 @@ export const Player = defineStore(
       isplaying,
       playnormal,
       playFM,
+      playmodel,
       playlist,
       currentSong,
       currentSongDetial,
@@ -360,6 +372,8 @@ export const Player = defineStore(
       playNextSong,
       playPrevSong,
       addSongsToPlaylist,
+      randomplaymodel,
+      onlyoneplaymodel,
     }
   },
   {
@@ -369,6 +383,9 @@ export const Player = defineStore(
       paths: [
         'playlist',
         'currentSongList',
+        'playnormal',
+        'playFM',
+        'playmodel',
         'currentSong',
         'currentSongDetail',
         'currentSongUrl',

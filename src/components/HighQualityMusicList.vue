@@ -153,6 +153,8 @@ const TurnIn = (item: Item) => {
 
 async function play(item: Item) {
   try {
+    store.playFM = false
+    store.playnormal = true
     if (!item?.id) {
       console.warn('play: missing item.id', item)
       return

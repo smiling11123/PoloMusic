@@ -6,32 +6,6 @@
     </div>
 
     <div v-else>
-      <div class="playlist-header">
-        <div class="cover-wrap">
-          <img :src="ArtistDetail.coverImgUrl" alt="歌单封面" class="cover" />
-        </div>
-
-        <div class="info">
-          <div class="title-row">
-            <h1 class="title">{{ ArtistDetail.name }}</h1>
-          </div>
-
-          <div class="description-wrapper">
-            <p class="description" :title="ArtistDetail.description">
-              {{ ArtistDetail.description }}
-            </p>
-          </div>
-
-          <div class="actions">
-            <button size="large" @click="playAll" class="play-all-btn">
-              <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
-
       <div class="song-list-container">
         <div class="list-header">
           <div class="col-cover"></div>
@@ -111,17 +85,11 @@ import { GetMusicFromList } from '@/api/GetMusicFromList'
 import type { Song, Playlist } from '@/stores/index'
 import { GetArtist } from '@/api/Artist'
 import { GetMusicDetail } from '@/api/GetMusic'
+import { GetDailyRecommendMusic, GetRecommendDj } from '@/api/GetMusicList'
 
 const playerStore = Player()
 const route = useRoute()
 const isLoading = ref(true)
-
-const ArtistDetail = ref<any>({
-  id: 0,
-  name: '',
-  coverImgUrl: '',
-  description: '',
-})
 
 const songs = ref<Song[]>([])
 const currentSongId = computed(() => playerStore.currentSong || null)
@@ -134,21 +102,13 @@ const ArtistId = computed(() => {
 async function loadPlaylistData() {
   isLoading.value = true
   try {
-    const arid = ArtistId.value
-    if (!arid) return
-
-    const res = await GetArtist(arid)
-    const hotsongs = res.hotSongs
+    const res = await GetDailyRecommendMusic()
+    const hotsongs = res.data.dailySongs
+    console.log(hotsongs)
     const pl = res.artist
     const playlist = ref()
     console.log(hotsongs)
     console.log(pl)
-    ArtistDetail.value = {
-      id: pl.id,
-      name: pl.name,
-      coverImgUrl: pl.picUrl,
-      description: pl.briefDesc || '暂无简介',
-    }
     const songlist = hotsongs
     playlist.value = songlist.map((song: any) => ({
       id: song.id,
@@ -228,8 +188,6 @@ function formatTime(s: number) {
 }
 
 function playAll() {
-  playerStore.playFM = false
-  playerStore.playnormal = true
   if (songs.value.length) {
     playerStore.addWholePlaylist(songs.value.map((s) => s.id))
     playerStore.playcurrentSong(songs.value[0].id)
@@ -237,8 +195,6 @@ function playAll() {
 }
 
 function playSong(song: Song, index: number) {
-  playerStore.playFM = false
-  playerStore.playnormal = true
   playerStore.addWholePlaylist(songs.value.map((s) => s.id))
   playerStore.playcurrentSong(song.id)
 }
@@ -246,7 +202,7 @@ function playSong(song: Song, index: number) {
 
 <style scoped lang="scss">
 // 变量定义
-$bg-color: #1c1c1e; // 你截图中的深色背景
+$bg-color: #121212; // 你截图中的深色背景
 $item-hover: rgba(255, 255, 255, 0.06);
 $text-main: #e0e0e0;
 $text-sub: #888888;
@@ -273,7 +229,7 @@ $primary: #0bdc9a;
     width: 200px;
     height: 200px;
     flex-shrink: 0;
-    border-radius: 12px;
+    border-radius: 50%;
     overflow: hidden;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
 

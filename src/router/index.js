@@ -5,6 +5,7 @@ import MusicList from '@/components/MusicList.vue'
 import Musichub from '@/components/MusicHub.vue'
 import SearchResult from '@/components/SearchResult.vue'
 import Album from '@/components/Album.vue'
+import DailyRecommendMusic from '@/components/DailyRecommendMusic.vue'
 
 const routes = [
   {
@@ -46,7 +47,12 @@ const routes = [
     path: '/Album/:id',
     name: 'album',
     component: Album,
-  }
+  },
+  {
+    path: '/DailyRecommendMusic',
+    name: 'DailyRecommendMusic',
+    component: DailyRecommendMusic,
+  },
 
 ]
 

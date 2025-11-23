@@ -110,8 +110,14 @@ $bg-active: rgba(255, 255, 255, 0.12);
 $text-main: #ffffff;
 $text-sub: rgba(255, 255, 255, 0.5);
 $text-hover: #ffffff;
-$radius: 8px;
-
+$radius: 10px;
+$bg-dark: #1c1c1e;
+.Show-PlayList {
+  width: 100%;
+  height: 100%;
+  background-color: $bg-dark; // 强制深色背景
+  color: $text-main; // 确保文本颜色
+}
 // --- 滚动容器 ---
 .song-list-wrapper {
   max-width: 100%;
@@ -153,6 +159,7 @@ $radius: 8px;
   background: transparent;
   border-radius: $radius;
   margin-bottom: 4px;
+  margin-top: 4px;
   transition: all 0.2s ease;
   cursor: pointer; // 添加手型光标
 
