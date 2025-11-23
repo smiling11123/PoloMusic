@@ -8,7 +8,7 @@
 
 ![image-20251123101128357](Img/search.png)
 
-![image-20251122090317523](Img/Lyric.png)
+![image-20251122090317523](Img/lyric.png)
 
 ## 功能
 
