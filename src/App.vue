@@ -154,14 +154,6 @@ const onPaneResize = debounce((newSize) => {
 
 <style scoped lang="scss">
 /* ===== 基础布局不变 ===== */
-
-:host {
-  display: block;
-  width: 100%;
-  height: 100%;
-  background: #1c1c1e;
-}
-
 .Topbar {
   position: fixed;
   top: 0;
@@ -169,7 +161,8 @@ const onPaneResize = debounce((newSize) => {
   right: 0;
   height: 50px;
   z-index: 1000;
-  background: #1c1c1e;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: #000000;
   transform: translateZ(0);
   will-change: transform;
 }
@@ -182,7 +175,7 @@ const onPaneResize = debounce((newSize) => {
   height: 65px;
   z-index: 1000;
   box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
-  background: #1c1c1e;
+  background: #000000;
   transform: translateZ(0);
   will-change: transform;
 }
@@ -193,7 +186,7 @@ const onPaneResize = debounce((newSize) => {
   bottom: 65px;
   left: 0;
   right: 0;
-  
+  padding: 0 1%;
   box-sizing: border-box;
   transform: translateZ(0);
 }
@@ -215,7 +208,6 @@ const onPaneResize = debounce((newSize) => {
   overscroll-behavior: contain;
   scroll-behavior: smooth;
   contain: layout style paint;
-  background: #1c1c1e;
     &::-webkit-scrollbar {
     display: none; 
     width: 0 !important;
@@ -241,7 +233,6 @@ const onPaneResize = debounce((newSize) => {
   right: 0;
   bottom: 0px;
   width: 360px; /* 固定宽度 */
-
 
   box-shadow: -2px 0 8px rgba(0, 0, 0, 0.3);
   z-index: 999;

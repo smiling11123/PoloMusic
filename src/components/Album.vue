@@ -228,8 +228,6 @@ function formatTime(s: number) {
 }
 
 function playAll() {
-  playerStore.playFM = false
-  playerStore.playnormal = true
   if (songs.value.length) {
     playerStore.addWholePlaylist(songs.value.map((s) => s.id))
     playerStore.playcurrentSong(songs.value[0].id)
@@ -237,8 +235,6 @@ function playAll() {
 }
 
 function playSong(song: Song, index: number) {
-  playerStore.playFM = false
-  playerStore.playnormal = true
   playerStore.addWholePlaylist(songs.value.map((s) => s.id))
   playerStore.playcurrentSong(song.id)
 }
@@ -246,7 +242,7 @@ function playSong(song: Song, index: number) {
 
 <style scoped lang="scss">
 // 变量定义
-$bg-color: #1c1c1e; // 你截图中的深色背景
+$bg-color: #121212; // 你截图中的深色背景
 $item-hover: rgba(255, 255, 255, 0.06);
 $text-main: #e0e0e0;
 $text-sub: #888888;
@@ -257,7 +253,6 @@ $primary: #0bdc9a;
   background-color: $bg-color;
   min-height: 100vh;
   color: $text-main;
-  border-radius: 30px;
   font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   user-select: none;

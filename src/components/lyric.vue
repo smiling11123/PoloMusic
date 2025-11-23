@@ -29,13 +29,10 @@
             <h2 class="song-title" :title="player.currentSongDetial.name">
               {{ player.currentSongDetial.name || '未知歌曲' }}
             </h2>
-            <div class="artist-name">
-            <span v-for="(artist, index) in player.currentSongDetial.artists" :key="artist.id" @click="TurnIn(artist.id)">
-              {{ artist.name }}<span v-if="index < player.currentSongDetial.artists.length - 1"> / </span></span>
-            </div>
+            <p class="artist-name">{{ player.currentSongDetial.artist || '未知艺术家' }}</p>
           </div>
           <div class="track-actions">
-            <button class="like-btn">
+            <button class="icon-btn like-btn">
               <svg
                 width="22"
                 height="22"
@@ -98,6 +95,7 @@
               </svg>
             </button>
           </div>
+
           <div class="vol-control">
             <svg
               width="18"
@@ -159,10 +157,7 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { Player } from '@/stores/index'
 import { pagecontrol } from '@/stores/page'
-import { useRouter } from 'vue-router'
-import { GetPersonalFM } from '@/api/GetMusicList'
 
-const router = useRouter()
 const player = Player()
 const pageCtrl = pagecontrol()
 
@@ -403,43 +398,9 @@ function handleUserScroll() {
 function togglePlay() {
   player.togglePlay()
 }
-const next = async () => {
+function next() {
   scrollToTop('smooth')
   player.playNextSong && player.playNextSong()
-  const mappedFmSongs = ref()
-  if (player.playFM) {
-    if (player.currentSongIndex - player.playlist.length <= 3) {
-      const fmRes = await GetPersonalFM()
-      const fmList = fmRes.data
-      mappedFmSongs.value = fmList.map((song: any) => ({
-        id: song.id,
-        name: song.name,
-        album: song.album?.name,
-        artist: song.artists?.[0]?.name,
-        duration: Math.floor(song.duration / 1000),
-        cover: song.album?.picUrl,
-      }))
-      const idRes: any = mappedFmSongs.value
-
-      // 从响应中提取 id 列表（根据你的后端结构调整）
-      let ids: number[] = []
-      if (Array.isArray(idRes)) {
-        ids = idRes.map((v: any) => (typeof v === 'object' ? (v.id ?? v) : v))
-      } else if (Array.isArray(idRes?.ids)) {
-        ids = idRes.ids.map((v: any) => (typeof v === 'object' ? (v.id ?? v) : v))
-      } else if (Array.isArray(idRes?.data)) {
-        ids = idRes.data.map((v: any) => (typeof v === 'object' ? (v.id ?? v) : v))
-      } else if (idRes?.id) {
-        ids = [idRes.id]
-      }
-
-      if (!ids.length) {
-        console.error('No track ids returned from MusicIdList', idRes)
-        return
-      }
-      player.addSongsToPlaylist(ids)
-    }
-  }
 }
 function prev() {
   scrollToTop('smooth')
@@ -478,11 +439,6 @@ watch(volume, (v) => {
   if (player.audio) player.audio.volume = v
   player.audiovolume = v
 })
-
-const TurnIn = (artistid) => {
-  pageCtrl.ShowLyric = false
-  router.push({name: 'artist', params: { id: artistid } } )
-}
 </script>
 
 <style scoped>
@@ -601,27 +557,6 @@ const TurnIn = (artistid) => {
   font-size: 18px;
   color: rgba(255, 255, 255, 0.6);
   margin: 0;
-  span {
-    cursor: pointer;
-    &:hover {
-      color: #fff;
-    }
-  }
-}
-.like-btn {
-  width: 30px;
-  height: 30px;
-  background: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.5);
-  cursor: pointer;
-  transition: all 0.5s;
-  padding: 0;
-  border-radius: 8px;
-  transition: color 0.5s;
-  &:hover {
-      background-color: rgba(255, 255, 255, 0.1);
-    }
 }
 .icon-btn {
   background: transparent;
@@ -629,19 +564,14 @@ const TurnIn = (artistid) => {
   color: rgba(255, 255, 255, 0.5);
   cursor: pointer;
   padding: 0;
-  transition: all 0.5s;
+  transition: all 0.2s;
   display: flex;
-  border-radius: 4px;
-  transition: color 0.5s;
-  &:hover {
-      background-color: rgba(255, 255, 255, 0.1);
-    }
 }
-.icon-btn, .like-btn:hover {
+.icon-btn:hover {
   color: #fff;
   transform: scale(1.1);
 }
-.icon-btn, .like-btn:active {
+.icon-btn:active {
   transform: scale(0.95);
 }
 
@@ -696,16 +626,14 @@ const TurnIn = (artistid) => {
 
 /* 底部控制区 */
 .controls-row {
-
-  justify-content: center;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
 }
 .main-controls {
   display: flex;
-  justify-self: center;
   align-items: center;
-  gap: 52px;
-  padding: 20px;
+  gap: 32px;
 }
 .main-controls .lg {
   color: #fff;
@@ -713,9 +641,8 @@ const TurnIn = (artistid) => {
 .vol-control {
   display: flex;
   align-items: center;
-  justify-self: center;
   gap: 10px;
-  width: 80%;
+  width: 120px;
 }
 
 /* ================= 右侧：歌词 ================= */
