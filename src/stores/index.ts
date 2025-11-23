@@ -1,4 +1,4 @@
-import { MusicUrl, GetMusicDetail, GetMusicLyric } from '@/api/GetMusic'
+import { MusicUrl, GetMusicDetail, GetMusicLyric, GetWordMusicLyric } from '@/api/GetMusic'
 import { defineStore } from 'pinia'
 import { computed, ComputedRef, ref } from 'vue'
 import { GetPersonalFM } from '@/api/GetMusicList'
@@ -51,6 +51,7 @@ export const Player = defineStore(
     const currentSongUrl = ref<String | null>(null) //上次播放位置
     const currentSongTime = ref<number>(0)
     const currentSongLyric = ref<String>(null)
+    const currentSongWordLyric = ref<String>(null)
     const currentSongTLyric = ref<String>(null)
     const useCookie = ref<String | null>(null)
     const currentSongDetial = ref<SongItem>(null)
@@ -91,11 +92,13 @@ export const Player = defineStore(
       const urls = await MusicUrl({ id: id }) // 获取歌曲 URL
       const data = await GetMusicDetail({ ids: id }) // 获取歌曲详细信息
       const lyric = await GetMusicLyric(id)
+      //const wordlyric = await GetWordMusicLyric(id)
       const detail = data.songs[0] // 设置当前歌曲详细信息
       currentSongUrl.value = urls[0].url
       currentSongLyric.value = lyric.lrc?.lyric
       currentSongTLyric.value = lyric.tlyric?.lyric || null
-
+      //currentSongWordLyric.value = wordlyric
+      console.log(currentSongWordLyric.value)
       currentSongDetial.value = {
         id: detail.id,
         name: detail.name,
@@ -192,7 +195,7 @@ export const Player = defineStore(
         id: song.id,
         name: song.name,
         album: song.al?.name || '未知专辑',
-        artists: song.ar?.map((a) => a.name).join('/') || '未知艺术家',
+        artists: song.ar.map((ar: any) => ({ id: ar.id, name: ar.name })),
         duration: song.dt ? Math.floor(song.dt / 1000) : 0,
         cover: song.al?.picUrl || '',
       })
@@ -359,6 +362,7 @@ export const Player = defineStore(
       currentSongDetial,
       currentSongLyric,
       currentSongTLyric,
+      currentSongWordLyric,
       useCookie,
       currentSongList,
       currentSongIndex,
@@ -393,6 +397,7 @@ export const Player = defineStore(
         'currentSongTime',
         'currentSongLyric',
         'currentSongTLyric',
+        'currentSongWordLyric',
       ],
     } as any,
   },

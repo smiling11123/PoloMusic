@@ -33,7 +33,8 @@
     <div class="right">
       <!-- 窗口控制按钮，必须设置 no-drag -->
        <button class="user" @click="ToUser">
-        <img class="userPic" :src="userInfos.avatarUrl" @click="ToUser"></img>
+        <img class="userPic" v-if= userInfos.avatarUrl  :src="userInfos.avatarUrl" @click="ToUser"></img>
+        <img class="userPic" v-else src="../../public/user.jpg"></img>
        </button>
       <button class="win-btn" @click="minimize" title="最小化">━</button>
       <button class="win-btn" @click="toggleMax" title="最大化/还原">▢</button>
@@ -95,12 +96,7 @@ const dosearch = async () => {
   justify-content: space-between;
   padding: 0 16px;
   z-index: 1000;
-
-  /* 毛玻璃效果 */
-  background: rgba(25, 25, 25, 0.95); /* 深色底 */
-  backdrop-filter: blur(20px) saturate(180%); /* 毛玻璃 */
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  background: #1c1c1e;
 
   /* 关键：允许整个 topbar 区域做拖拽 */
   -webkit-app-region: drag;

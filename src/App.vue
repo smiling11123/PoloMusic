@@ -16,7 +16,7 @@
       @update:size="onPaneResize"
     >
       <!-- Pane 1: 左侧 -->
-      <template #1 >
+      <template #1>
         <div class="scroll-pane" v-if="pagecontroler.IsLogin" key="homepage">
           <Homepage />
         </div>
@@ -123,16 +123,20 @@ const leftPaneSize = ref(0.2) // 默认展开 20%
 // 新增：保存展开时的尺寸
 const expandedSize = ref(0.2)
 // 监听 IsFold 变化
-watch(() => pagecontroler.IsFold, (isFolded) => {
-  if (isFolded) {
-    // 折叠：保存当前尺寸，然后设为最小值
-    expandedSize.value = leftPaneSize.value
-    leftPaneSize.value = 0 // 最小值
-  } else {
-    // 展开：恢复保存的尺寸
-    leftPaneSize.value = expandedSize.value || 0.2
-  }
-}, { immediate: true })
+watch(
+  () => pagecontroler.IsFold,
+  (isFolded) => {
+    if (isFolded) {
+      // 折叠：保存当前尺寸，然后设为最小值
+      expandedSize.value = leftPaneSize.value
+      leftPaneSize.value = 0 // 最小值
+    } else {
+      // 展开：恢复保存的尺寸
+      leftPaneSize.value = expandedSize.value || 0.2
+    }
+  },
+  { immediate: true },
+)
 const debounce = (fn, delay = 100) => {
   let timer = null
   return (...args) => {
@@ -148,8 +152,6 @@ const onPaneResize = debounce((newSize) => {
   }
   window.dispatchEvent(new Event('resize'))
 }, 150)
-
-
 </script>
 
 <style scoped lang="scss">
@@ -181,7 +183,6 @@ const onPaneResize = debounce((newSize) => {
   right: 0;
   height: 65px;
   z-index: 1000;
-  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
   background: #1c1c1e;
   transform: translateZ(0);
   will-change: transform;
@@ -193,7 +194,7 @@ const onPaneResize = debounce((newSize) => {
   bottom: 65px;
   left: 0;
   right: 0;
-  
+
   box-sizing: border-box;
   transform: translateZ(0);
 }
@@ -216,12 +217,12 @@ const onPaneResize = debounce((newSize) => {
   scroll-behavior: smooth;
   contain: layout style paint;
   background: #1c1c1e;
-    &::-webkit-scrollbar {
-    display: none; 
+  &::-webkit-scrollbar {
+    display: none;
     width: 0 !important;
     height: 0 !important;
   }
-  scrollbar-width: none; 
+  scrollbar-width: none;
   -ms-overflow-style: none;
 }
 
@@ -242,8 +243,7 @@ const onPaneResize = debounce((newSize) => {
   bottom: 0px;
   width: 360px; /* 固定宽度 */
 
-
-  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.3);
+  // box-shadow: -2px 0 8px rgba(0, 0, 0, 0.3);
   z-index: 999;
   contain: layout style paint;
 }
@@ -253,12 +253,12 @@ const onPaneResize = debounce((newSize) => {
   overflow-y: auto;
   overscroll-behavior: contain;
   &::-webkit-scrollbar {
-    display: none; 
+    display: none;
     width: 0 !important;
     height: 0 !important;
   }
-  scrollbar-width: none; 
-  -ms-overflow-style: none; 
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 /* 滑入动画 */

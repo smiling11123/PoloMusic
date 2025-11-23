@@ -1,6 +1,8 @@
 const { app, BrowserWindow, ipcMain } = require('electron/main')
 const path = require('node:path')
-let mainWindow = null 
+const { serveNcmApi } = require('../net/server') // Import API server
+
+let mainWindow = null
 const createWindow = () => {
   mainWindow = new BrowserWindow({
     width: 1500,
@@ -17,7 +19,12 @@ const createWindow = () => {
     // Remove native title bar/overlay so CSS drag regions work on Windows
   })
 
+  if (app.isPackaged) {
+    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
+  } else {
   mainWindow.loadURL('http://localhost:5173/')
+  }
+
   // 为当前窗口注册控制 IPC（使用 invoke）
   ipcMain.handle('window-minimize', () => {
     if (mainWindow) mainWindow.minimize()
@@ -36,7 +43,19 @@ const createWindow = () => {
   })
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Start API server
+  const port = 3000
+  try {
+    await serveNcmApi({
+      port,
+      checkVersion: false,
+    })
+    console.log(`API server started on port ${port}`)
+  } catch (error) {
+    console.error('Failed to start API server:', error)
+  }
+
   ipcMain.handle('ping', () => 'pong')
   createWindow()
 

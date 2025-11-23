@@ -1,7 +1,7 @@
 <!-- SearchBox.vue -->
 <template>
   <div class="search-container">
-    <span class="search-icon">🔍</span>
+    <span class="search-icon"></span>
     <input
       type="text"
       class="search-box"

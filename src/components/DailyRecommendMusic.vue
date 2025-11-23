@@ -214,6 +214,7 @@ $primary: #0bdc9a;
   min-height: 100vh;
   color: $text-main;
   border-radius: 30px;
+  background: #1c1c1e;
   font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   user-select: none;

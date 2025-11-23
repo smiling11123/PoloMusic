@@ -230,9 +230,6 @@ const togglePlay = () => {
 }
 
 const handleNext = async () => {
-  player.playNextSong()
-  //const nextdata = GetNextPersonalFM()
-  //console.log(nextdata)
   console.log(player.currentSongList.length)
   console.log(player.playlist.length)
   if (player.currentSongIndex - player.playlist.length <= 3) {
@@ -268,6 +265,7 @@ const handleNext = async () => {
     }
     player.addSongsToPlaylist(ids)
   }
+  player.playNextSong()
   console.log('FM下一首')
 }
 

@@ -271,7 +271,6 @@ function prev() {
 }
 const next = async () => {
   //store.playNextSong && store.playNextSong()
-  store.playNextSong()
   //const nextdata = GetNextPersonalFM()
   //console.log(nextdata)
   const mappedFmSongs = ref()
@@ -308,6 +307,7 @@ const next = async () => {
       store.addSongsToPlaylist(ids)
     }
   }
+  store.playNextSong()
   console.log('列表', store.currentSongList)
   console.log('列表id', store.playlist)
   console.log('当前索引', store.currentSongIndex)
@@ -343,13 +343,8 @@ const Onlyoneplaymodel = () => {
   align-items: center;
   padding: 0 24px;
   gap: 20px;
-
-  /* 视觉风格：磨砂黑 */
-  background: rgba(25, 25, 25, 0.95); /* 深色底 */
-  backdrop-filter: blur(20px) saturate(180%); /* 毛玻璃 */
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: #1c1c1e;
   color: #fff;
-  box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.3);
   user-select: none;
 }
 

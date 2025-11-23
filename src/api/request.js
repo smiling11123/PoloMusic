@@ -6,7 +6,10 @@ export const request = axios.create({
   timeout: 0,
   withCredentials: true, // 默认尝试携带凭证（如果服务端设置了 CORS allow-credentials）
 })
-
+export const requestwordlyric = axios.create({
+  baseURL: 'https://raw.githubusercontent.com/Steve-xmh/amll-ttml-db/refs/heads/main/ncm-lyrics',
+  timeout: 0,
+})
 export const withCookie = (params = {}) => {
   const cacheBuster = Date.now
   const cookie = localStorage.getItem('neteaseCookie')
