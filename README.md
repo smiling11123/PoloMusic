@@ -16,17 +16,6 @@
 
 拉取文件到本地
 将[第三方网易云api](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced)文件夹放到polomusic中，
-polomusic----
-            |
-            src
-            |
-            public
-            |
-            node_modules
-            |
-            net
-            |
-            ...
 
 分别在polomusic和net目录下执行`npm install`
 
