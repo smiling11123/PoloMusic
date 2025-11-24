@@ -201,6 +201,7 @@ const onPaneResize = debounce((newSize) => {
 
 /* 中间内容区域 - 保持比例不变 */
 .center-content {
+
   height: 100%;
   transition: padding-right 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* 平滑过渡 */
 }

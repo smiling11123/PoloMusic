@@ -115,8 +115,9 @@
               min="0"
               max="1"
               step="0.01"
-              v-model="volume"
-              :style="{ '--progress': volume * 100 + '%' }"
+              @input="onVolume"
+              v-model.number="player.audio.volume"
+              :style="{ '--progress': player.audio.volume * 100 + '%' }"
             />
           </div>
         </div>
@@ -172,8 +173,8 @@ const currentTime = ref(0)
 const duration = ref(0)
 const seekValue = ref(0)
 const isSeeking = ref(false)
-const volume = ref(player.audiovolume ?? 1)
-
+const volume = ref(player.audio.volume ?? 1)
+const prevVolume = ref(volume.value)
 // ==================== 1. 双语歌词解析 ====================
 interface LyricLine {
   time: number
@@ -237,6 +238,7 @@ const setLyricLineRef = (el: any, index: number) => {
 }
 onMounted(() => {
   const audio = player.audio
+  volume.value = player.audiovolume ?? 1
   if (audio) {
     // 初始化状态
     duration.value = player.currentSongDetial.duration || audio.duration || 0
@@ -473,10 +475,14 @@ function formatTime(s: number) {
   const sec = (s % 60).toString().padStart(2, '0')
   return `${m}:${sec}`
 }
-
+function onVolume() {
+  if (volume.value > 0) prevVolume.value = volume.value
+}
 watch(volume, (v) => {
-  if (player.audio) player.audio.volume = v
   player.audiovolume = v
+  if (player.audio) player.audio.volume = player.audiovolume
+  
+  
 })
 
 const TurnIn = (artistid) => {

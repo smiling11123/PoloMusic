@@ -144,7 +144,7 @@ $text-sub: #7d7d7d;
   width: 100%;
   max-width: $max-width;
   margin: 0 auto;
-  padding: 20px 0;
+  padding: 20px 20px;
   box-sizing: border-box;
   user-select: none;
 }

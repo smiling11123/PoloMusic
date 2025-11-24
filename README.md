@@ -21,7 +21,7 @@
 
 vue服务默认端口 5173
 net api服务默认端口 3000
-可通过`npm run electron dev`启动三个服务
+可通过`npm run electron:dev`启动三个服务
 
 也可以将net api[部署](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced)在服务器减轻本地占用
 

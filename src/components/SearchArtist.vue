@@ -209,7 +209,7 @@ $card-gap: 20px; // 卡片间距
   width: 100%;
   max-width: $container-max-width;
   margin: 0 auto; // 居中
-  padding: 20px 0; // 上下内边距
+  padding: 20px 20px; // 上下内边距
   position: relative;
   box-sizing: border-box;
   user-select: none;

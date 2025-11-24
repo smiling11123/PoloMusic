@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron/main')
 const path = require('node:path')
-const { serveNcmApi } = require('../net/server') // Import API server
+const generateConfig = require('../net/generateConfig')
 
 let mainWindow = null
 const createWindow = () => {
@@ -11,7 +11,7 @@ const createWindow = () => {
     transparent: false,
     titleBarStyle: 'hidden',
     webPreferences: {
-      webSecurity: true, 
+      webSecurity: true,
       preload: path.join(__dirname, 'electron', 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
@@ -23,7 +23,7 @@ const createWindow = () => {
   if (app.isPackaged) {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
   } else {
-  mainWindow.loadURL('http://localhost:5173/')
+    mainWindow.loadURL('http://localhost:5173/')
   }
 
   // 为当前窗口注册控制 IPC（使用 invoke）
@@ -45,9 +45,13 @@ const createWindow = () => {
 }
 
 app.whenReady().then(async () => {
+  // Generate anonymous token
+  await generateConfig()
+
   // Start API server
   const port = 3000
   try {
+    const { serveNcmApi } = require('../net/server')
     await serveNcmApi({
       port,
       checkVersion: false,

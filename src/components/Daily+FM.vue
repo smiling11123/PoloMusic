@@ -321,7 +321,7 @@ $accent: #335eea; // 强调色
 $radius: 16px;
 
 .for-you-section {
-  padding: 20px 0;
+  padding: 20px 20px;
   width: 100%;
   max-width: 1200px; // 限制最大宽度
   margin: 0 auto;

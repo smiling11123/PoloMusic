@@ -175,10 +175,10 @@
           min="0"
           max="1"
           step="0.01"
-          v-model.number="volume"
+          v-model.number="audio.volume"
           @input="onVolume"
           class="slider volume-slider"
-          :style="{ '--progress': volume * 100 + '%' }"
+          :style="{ '--progress': audio.volume * 100 + '%' }"
         />
       </div>
     </div>
