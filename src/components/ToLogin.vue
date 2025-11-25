@@ -263,7 +263,7 @@ const startCheckQRStatus = () => {
             localStorage.setItem('userDetail', JSON.stringify(userDetail))
           }
           successMsg.value = '登录成功，正在跳转...'
-          router.push('/')
+          //router.push('/')
           setTimeout(() => {
             router.replace('/')
             window.location.reload()
@@ -322,7 +322,7 @@ const handlePhoneLogin = async () => {
       successMsg.value = `欢迎回来，${res.data.profile?.nickname || ''}！`
 
       setTimeout(() => {
-        router.replace('/')
+        //router.replace('/')
         window.location.reload()
       }, 1500)
     } else {
@@ -373,7 +373,11 @@ const handleCookieLogin = async () => {
       }
 
       successMsg.value = `登录成功！欢迎 ${testRes.data.profile?.nickname || '用户'}`
-      router.push('/')
+      //router.push('/')
+      setTimeout(() => {
+            router.replace('/')
+            window.location.reload()
+          }, 1500)
     } else {
       throw new Error('Cookie无效或已过期')
     }

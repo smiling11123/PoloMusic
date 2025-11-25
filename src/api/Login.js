@@ -99,3 +99,11 @@ export const CheckLoginStatus = async () => {
 
   }).then((res) => res.data);
 }
+
+//退出登录
+export const LogOut = async () =>{
+  return request({
+    url: '/logout',
+    params: withCookie(),
+  })
+}

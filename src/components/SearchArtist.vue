@@ -1,15 +1,44 @@
 <template>
   <div class="hq-container">
-    
     <div class="header-row">
       <h2 class="section-title">艺人</h2>
-      
+
       <div class="nav-controls" v-if="pageCount > 1">
-        <button class="ctrl-btn prev" @click="prev" :disabled="currentPage === 0" aria-label="上一页">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        <button
+          class="ctrl-btn prev"
+          @click="prev"
+          :disabled="currentPage === 0"
+          aria-label="上一页"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
         </button>
-        <button class="ctrl-btn next" @click="next" :disabled="currentPage === pageCount - 1" aria-label="下一页">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        <button
+          class="ctrl-btn next"
+          @click="next"
+          :disabled="currentPage === pageCount - 1"
+          aria-label="下一页"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
         </button>
       </div>
     </div>
@@ -17,7 +46,6 @@
     <div class="viewport">
       <div class="slides" :style="{ transform: `translateX(-${currentPage * 100}%)` }">
         <div v-for="(page, pi) in pages" :key="pi" class="slide">
-          
           <div v-for="(item, idx) in page" :key="item.id" class="hq-item">
             <div class="hq-card" @click="TurnIn(item)">
               <img :src="item.image" alt="" class="hq-img" loading="lazy" />
@@ -28,7 +56,7 @@
           </div>
 
           <div
-            v-for="n in (itemsPerPage - page.length)"
+            v-for="n in itemsPerPage - page.length"
             :key="'ph-' + n"
             class="hq-item placeholder"
           />
@@ -91,7 +119,7 @@ watch(
       fetchData(newKeyword)
     }, 300)
   },
-  { immediate: true } // 立即执行一次以处理组件挂载时的初始值
+  { immediate: true }, // 立即执行一次以处理组件挂载时的初始值
 )
 // 监听 resize
 onMounted(() => {
@@ -112,14 +140,14 @@ const itemsPerPage = computed(() => currentCols.value * 1)
 watchEffect(() => {
   if (currentCols.value) {
     // 可选：重置页码，或者重新计算当前页码使其对应当前的item
-    // currentPage.value = 0 
+    // currentPage.value = 0
   }
 })
 
 // 数据获取
 const fetchData = async (Keyword) => {
   try {
-    const res = await GetSearchData({keyword: Keyword, type: 100, limit: 10})
+    const res = await GetSearchData({ keyword: Keyword, type: 100, limit: 10 })
     items.value = (res.result.artists || []).map((m: any) => ({
       image: m.picUrl,
       name: m.name,
@@ -135,7 +163,7 @@ const pages = computed(() => {
   const result: Item[][] = []
   // 必须要保证 items.value 存在
   if (!items.value.length) return []
-  
+
   for (let i = 0; i < items.value.length; i += itemsPerPage.value) {
     result.push(items.value.slice(i, i + itemsPerPage.value))
   }
@@ -145,8 +173,12 @@ const pages = computed(() => {
 const pageCount = computed(() => pages.value.length)
 
 // 翻页逻辑
-const prev = () => { if (currentPage.value > 0) currentPage.value-- }
-const next = () => { if (currentPage.value < pageCount.value - 1) currentPage.value++ }
+const prev = () => {
+  if (currentPage.value > 0) currentPage.value--
+}
+const next = () => {
+  if (currentPage.value < pageCount.value - 1) currentPage.value++
+}
 
 // 跳转详情
 const TurnIn = (item: Item) => {
@@ -159,6 +191,8 @@ async function play(item: Item) {
       console.warn('play: missing item.id', item)
       return
     }
+    store.playFM = false
+    store.playnormal = true
     console.log(typeof item.id)
     // 注意：以对象形式传参（避免 toFormData 报错）
     const idRes: any = await MusicIdList({ id: item.id })
@@ -180,10 +214,6 @@ async function play(item: Item) {
       console.error('No track ids returned from MusicIdList', idRes)
       return
     }
-
-    // 把标准化的 id 列表加入播放器
-    store.addWholePlaylist(ids)
-
     // 取第一首，先获取可播放 url
     const firstId = ids[0]
     console.log('First track id to play:', firstId)
@@ -192,6 +222,8 @@ async function play(item: Item) {
     store.playcurrentSong({
       firstId,
     })
+    // 把标准化的 id 列表加入播放器
+    store.addWholePlaylist(ids)
 
     console.log('isplaying', store.isplaying)
   } catch (err) {
@@ -273,7 +305,7 @@ $card-gap: 20px; // 卡片间距
   padding-top: 4px;
   display: flex;
   width: 100%;
-  
+
   transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); // 更顺滑的动画
 }
 
@@ -281,7 +313,7 @@ $card-gap: 20px; // 卡片间距
   flex: 0 0 100%; // 每一页占满 100%
   width: 100%;
   display: grid;
-  
+
   /* 核心修改：使用 JS 计算的 cols，配合 css grid 实现整齐排列 */
   grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
   gap: $card-gap;
@@ -371,24 +403,35 @@ $card-gap: 20px; // 卡片间距
 
 /* 大屏 */
 @media (min-width: 1401px) {
-  .slide { grid-template-columns: repeat(5, 1fr); }
+  .slide {
+    grid-template-columns: repeat(5, 1fr);
+  }
 }
 
 /* 中屏 */
 @media (max-width: 1400px) and (min-width: 1101px) {
-  .slide { grid-template-columns: repeat(4, 1fr); }
+  .slide {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 /* 平板 */
 @media (max-width: 1100px) and (min-width: 769px) {
-  .slide { grid-template-columns: repeat(3, 1fr); }
+  .slide {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 /* 手机 */
 @media (max-width: 768px) {
-  .slide { grid-template-columns: repeat(2, 1fr); }
-  
+  .slide {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   // 手机端隐藏左右切换按钮，或者改小
-  .ctrl-btn { width: 28px; height: 28px; }
+  .ctrl-btn {
+    width: 28px;
+    height: 28px;
+  }
 }
 </style>

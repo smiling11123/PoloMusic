@@ -1,7 +1,15 @@
-import { MusicUrl, GetMusicDetail, GetMusicLyric, GetWordMusicLyric, UnblockMusicUrl } from '@/api/GetMusic'
+import {
+  MusicUrl,
+  GetMusicDetail,
+  GetMusicLyric,
+  GetWordMusicLyric,
+  UnblockMusicUrl,
+} from '@/api/GetMusic'
 import { defineStore } from 'pinia'
 import { computed, ComputedRef, ref } from 'vue'
 import { GetPersonalFM } from '@/api/GetMusicList'
+import { lyric } from '@neteaseapireborn/api'
+import { pagecontrol } from './page'
 export interface Song {
   id: number
   name: string
@@ -48,16 +56,18 @@ export const Player = defineStore(
     const playlist = ref<number[]>([]) // 播放列表
     const playmodel = ref('')
     const currentSong = ref<number | null>(null) // 当前播放的歌曲
-    const currentSongUrl = ref<String | null>(null) //上次播放位置
-    const currentSongTime = ref<number>(0)
+    const currentSongUrl = ref<String | null>(null)
+    const currentSongTime = ref<number>(0) //上次播放位置
     const currentSongLyric = ref<String>(null)
     const currentSongWordLyric = ref<String>(null)
     const currentSongTLyric = ref<String>(null)
     const useCookie = ref<String | null>(null)
-    const currentSongDetial = ref<SongItem>(null)
-
+    const currentSongDetail = ref<SongItem>(null)
+    const nextSongDetail = ref<SongItem>(null)
+    const nextSongUrl = ref<String | null>(null)
     const currentSongList = ref<SongItem[]>([])
-
+    const nextSongLyric = ref<String>(null)
+    const pagecontroler = pagecontrol()
     const currentSongIndex: ComputedRef<number> = computed(() => {
       if (currentSong.value === null) return -1
       return playlist.value.findIndex((songId) => songId === currentSong.value)
@@ -86,24 +96,46 @@ export const Player = defineStore(
         audio.play()
       }
     }
+
+    //采用预加载下一首歌曲来降低请求带来的延迟
     const playcurrentSong = async (input) => {
       const id = input.firstId || input
       const unblockurls = ref(null)
+
+      const urls = ref(null)
+      const data = ref(null)
+      const lyric = ref(null)
       isplaying.value = true // 设置播放状态为 true
-      const urls = await MusicUrl({id: id})
-      if(urls[0].url === null ){
-        unblockurls.value = await UnblockMusicUrl(id) // 获取歌曲 URL
+      console.log(nextSongUrl.value)
+      if (nextSongUrl.value === null) {
+        const normalurl = await MusicUrl({ id: id })
+        urls.value = normalurl[0].url
+        if (urls.value === null) {
+          unblockurls.value = await UnblockMusicUrl(id)
+          urls.value = unblockurls.value.data.url // 获取歌曲 URL
+        }
+        // 获取歌曲详细信息
+        data.value = await GetMusicDetail({ ids: id })
+        if ((data.value.fee === '1' || '4') && pagecontroler.IsLogin === false) {
+          const freeurl = await UnblockMusicUrl(id)
+          urls.value = freeurl.data.url
+        }
+
+        lyric.value = await GetMusicLyric(id)
+      } else {
+        urls.value = nextSongUrl.value
+        data.value = nextSongDetail.value
+        lyric.value = nextSongLyric.value
       }
-      const data = await GetMusicDetail({ ids: id }) // 获取歌曲详细信息
-      const lyric = await GetMusicLyric(id)
+
       //const wordlyric = await GetWordMusicLyric(id)
-      const detail = data.songs[0] // 设置当前歌曲详细信息
-      currentSongUrl.value = urls[0].url?? unblockurls.value.data.url
-      currentSongLyric.value = lyric.lrc?.lyric
-      currentSongTLyric.value = lyric.tlyric?.lyric || null
+      const detail = data.value.songs[0] // 设置当前歌曲详细信息
+      currentSongUrl.value = urls.value
+      const url = currentSongUrl.value.toString()
+      currentSongLyric.value = lyric.value.lrc?.lyric
+      currentSongTLyric.value = lyric.value.tlyric?.lyric || null
       //currentSongWordLyric.value = wordlyric
-      console.log(currentSongWordLyric.value)
-      currentSongDetial.value = {
+      currentSongDetail.value = {
         id: detail.id,
         name: detail.name,
         artists: detail.ar.map((ar: any) => ({ id: ar.id, name: ar.name })),
@@ -112,11 +144,27 @@ export const Player = defineStore(
         album: detail.al.name,
       }
       currentSong.value = id
-      audio.src = urls[0].url?? unblockurls.value.data.url // 设置音频源
+      audio.src = url // 设置音频源
       currentSongTime.value = audio.currentTime
       setupAudioListener() // 设置音频监听器
       audio.load()
       audio.play() // 播放音频
+      const nextIndex = currentSongIndex.value + 1
+      console.log('current', currentSongIndex.value)
+      console.log('next', nextIndex)
+      const nexturls = await MusicUrl({ id: playlist.value[nextIndex] })
+      if (nexturls[0].url === null) {
+        unblockurls.value = await UnblockMusicUrl(playlist.value[nextIndex]) // 获取歌曲 URL
+        urls.value = unblockurls.value.data.url
+      }
+      data.value = await GetMusicDetail({ ids: playlist.value[nextIndex] }) // 获取歌曲详细信息
+      if ((data.value.fee === '1' || '4') && pagecontroler.IsLogin === false) {
+        const freeurl = await UnblockMusicUrl(id)
+        urls.value = freeurl.data.url
+      }
+      nextSongLyric.value = await GetMusicLyric(playlist.value[nextIndex])
+      //const wordlyric = await GetWordMusicLyric(id)
+      nextSongDetail.value = data.value.songs[0] // 设置当前歌曲详细信息
     }
     const loadPlaylistData = async () => {
       try {
@@ -363,7 +411,7 @@ export const Player = defineStore(
       playmodel,
       playlist,
       currentSong,
-      currentSongDetial,
+      currentSongDetail,
       currentSongLyric,
       currentSongTLyric,
       currentSongWordLyric,
@@ -371,6 +419,9 @@ export const Player = defineStore(
       currentSongList,
       currentSongIndex,
       currentSongTime,
+      nextSongDetail,
+      nextSongLyric,
+      nextSongUrl,
       playcurrentSong,
       loadPlaylistData,
       addSongToPlaylist,
@@ -402,6 +453,9 @@ export const Player = defineStore(
         'currentSongLyric',
         'currentSongTLyric',
         'currentSongWordLyric',
+        'nextSongDetail',
+        'nextSongLyric',
+        'nextSongUrl',
       ],
     } as any,
   },

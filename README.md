@@ -33,6 +33,7 @@ net api服务默认端口 3000
 - 支持显示类AppleMusic歌词页面
 - 支持每日推荐歌单、私人FM  ps: 私人FM可能存在瑕疵。
 - 支持音乐解灰(感谢[第三方网易云api](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced)提供的接口以及[unblockneteasemusic](https://github.com/UnblockNeteaseMusic/server)提供的解灰服务）
+- 支持无vip播放时替换原试听链接为其他平台(由[解灰服务](https://github.com/UnblockNeteaseMusic/server)为基础)
 - 支持最新音乐推荐
 - 支持推荐歌单
 - 支持精选歌单
@@ -46,8 +47,7 @@ net api服务默认端口 3000
 1. 个人页面（最近播放、我喜欢的歌单、收藏歌单等）
 2. 查看全部（查看全部最新歌曲、搜索单曲、歌手、歌单等）
 3. 喜欢歌曲
-4. 退出登录
-5. 接入lrc逐词歌词
+4. 接入lrc逐词歌词
    
 ## 灵感来源
 

@@ -189,12 +189,16 @@ function formatTime(s: number) {
 
 function playAll() {
   if (songs.value.length) {
+    playerStore.playFM = false
+    playerStore.playnormal = true
     playerStore.addWholePlaylist(songs.value.map((s) => s.id))
     playerStore.playcurrentSong(songs.value[0].id)
   }
 }
 
 function playSong(song: Song, index: number) {
+  playerStore.playFM = false
+  playerStore.playnormal = true
   playerStore.addWholePlaylist(songs.value.map((s) => s.id))
   playerStore.playcurrentSong(song.id)
 }

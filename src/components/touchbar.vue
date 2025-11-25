@@ -2,7 +2,7 @@
   <div class="touchbar" role="region" aria-label="player touchbar">
     <div class="left-area">
       <div class="cover-container" v-if="store.currentSong">
-        <img :src="store.currentSongDetial.cover" alt="cover" class="cover-img" />
+        <img :src="store.currentSongDetail.cover" alt="cover" class="cover-img" />
         <div class="lyric-btn-overlay" @click="ShowLyric()">
           <svg class="icon-lyric" viewBox="0 0 320 512" fill="currentColor">
             <path
@@ -17,17 +17,17 @@
         </div>
       </div>
       <div class="meta-info">
-        <div class="song-title" :title="store.currentSongDetial.name">
-          {{ store.currentSongDetial.name || 'PoloMusic' }}
+        <div class="song-title" :title="store.currentSongDetail.name">
+          {{ store.currentSongDetail.name || 'PoloMusic' }}
         </div>
         <div class="artist-name">
           <span
-            v-for="(artist, index) in store.currentSongDetial.artists"
+            v-for="(artist, index) in store.currentSongDetail.artists"
             :key="artist.id"
             @click="TurnIn(artist.id)"
           >
             {{ artist.name
-            }}<span v-if="index < store.currentSongDetial.artists.length - 1"> / </span>
+            }}<span v-if="index < store.currentSongDetail.artists.length - 1"> / </span>
           </span>
         </div>
       </div>
@@ -208,7 +208,7 @@ onMounted(() => {
   if (!audio) return
   store.isplaying = false
   volume.value = store.audiovolume ?? 1
-  duration.value = store.currentSongDetial.duration || 0
+  duration.value = store.currentSongDetail.duration || 0
   currentTime.value = store.currentSongTime || 0
   seekValue.value = currentTime.value
 

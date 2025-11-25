@@ -19,7 +19,11 @@
             {{ song.name }}
           </div>
           <div class="artist-name">
-            <span v-for="(artist, index) in song.artists" :key="artist.id" @click="TurnIn(artist.id)">
+            <span
+              v-for="(artist, index) in song.artists"
+              :key="artist.id"
+              @click="TurnIn(artist.id)"
+            >
               {{ artist.name }}<span v-if="index < song.artists.length - 1"> / </span>
             </span>
           </div>
@@ -69,7 +73,7 @@ const loadMusic = async (Keyword: string) => {
     // 1. 获取搜索结果 (获取ID)
     const searchRes = await GetSearchData({ keyword: Keyword, type: 1, limit: 12 })
     const rawSongList = searchRes?.result?.songs || []
-    
+
     if (rawSongList.length === 0) {
       songsList.value = []
       return
@@ -79,7 +83,7 @@ const loadMusic = async (Keyword: string) => {
     const ids = rawSongList.map((song: any) => song.id)
     // 3. 获取歌曲详细信息
     const detailRes = await GetMusicDetail({ ids: ids.join(',') })
-    
+
     // 4. 映射数据
     if (detailRes && detailRes.songs) {
       songsList.value = detailRes.songs.map((song: any) => ({
@@ -112,7 +116,7 @@ watch(
       loadMusic(newKeyword)
     }, 300)
   },
-  { immediate: true } // 立即执行一次以处理组件挂载时的初始值
+  { immediate: true }, // 立即执行一次以处理组件挂载时的初始值
 )
 
 // 组件销毁时清理定时器
@@ -122,15 +126,17 @@ onUnmounted(() => {
 
 // --- 播放与交互逻辑保持不变 ---
 const playSong = (song: SongItem) => {
-  store.addSongToPlaylist(song.id, store.currentSongIndex + 1)
+  store.playFM = false
+  store.playnormal = true
   store.playcurrentSong({ firstId: song.id })
+  store.addSongToPlaylist(song.id, store.currentSongIndex + 1)
 }
 
 const goToAllSongs = () => {
   // router.push('/new-songs')
 }
 const TurnIn = (artistid) => {
-  router.push({name: 'artist', params: { id: artistid } } )
+  router.push({ name: 'artist', params: { id: artistid } })
 }
 </script>
 

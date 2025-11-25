@@ -26,12 +26,12 @@
 
         <div class="track-info">
           <div class="info-text">
-            <h2 class="song-title" :title="player.currentSongDetial.name">
-              {{ player.currentSongDetial.name || '未知歌曲' }}
+            <h2 class="song-title" :title="player.currentSongDetail.name">
+              {{ player.currentSongDetail.name || '未知歌曲' }}
             </h2>
             <div class="artist-name">
-            <span v-for="(artist, index) in player.currentSongDetial.artists" :key="artist.id" @click="TurnIn(artist.id)">
-              {{ artist.name }}<span v-if="index < player.currentSongDetial.artists.length - 1"> / </span></span>
+            <span v-for="(artist, index) in player.currentSongDetail.artists" :key="artist.id" @click="TurnIn(artist.id)">
+              {{ artist.name }}<span v-if="index < player.currentSongDetail.artists.length - 1"> / </span></span>
             </div>
           </div>
           <div class="track-actions">
@@ -168,7 +168,7 @@ const player = Player()
 const pageCtrl = pagecontrol()
 
 // ==================== 基础数据 ====================
-const coverUrl = computed(() => player.currentSongDetial?.cover || '')
+const coverUrl = computed(() => player.currentSongDetail?.cover || '')
 const currentTime = ref(0)
 const duration = ref(0)
 const seekValue = ref(0)
@@ -241,7 +241,7 @@ onMounted(() => {
   volume.value = player.audiovolume ?? 1
   if (audio) {
     // 初始化状态
-    duration.value = player.currentSongDetial.duration || audio.duration || 0
+    duration.value = player.currentSongDetail.duration || audio.duration || 0
     currentTime.value = player.currentSongTime || 0
     seekValue.value = currentTime.value
 

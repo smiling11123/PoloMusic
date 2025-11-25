@@ -94,7 +94,7 @@ function formatTime(seconds: number): string {
 }
 
 function playSong(song: SongItem, index: number) {
-  playerStore.addWholePlaylist(songs.value.map((s) => s.id))
+  //playerStore.addWholePlaylist(songs.value.map((s) => s.id))
   playerStore.playcurrentSong(song.id)
 }
 const TurnIn = (artistid) => {

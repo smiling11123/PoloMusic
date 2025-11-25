@@ -212,11 +212,6 @@ async function play(item: Item) {
       console.error('No track ids returned from MusicIdList', idRes)
       return
     }
-
-    // 把标准化的 id 列表加入播放器
-    store.addWholePlaylist(ids)
-
-    // 取第一首，先获取可播放 url
     const firstId = ids[0]
     console.log('First track id to play:', firstId)
 
@@ -224,6 +219,10 @@ async function play(item: Item) {
     store.playcurrentSong({
       firstId,
     })
+    // 把标准化的 id 列表加入播放器
+    store.addWholePlaylist(ids)
+
+    // 取第一首，先获取可播放 url
 
     console.log('isplaying', store.isplaying)
   } catch (err) {

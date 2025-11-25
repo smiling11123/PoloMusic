@@ -32,7 +32,7 @@
           </div>
 
           <div class="fm-controls">
-            <button class="control-btn sm" @click.stop="handleDislike(player.currentSongDetial.id)">
+            <button class="control-btn sm" @click.stop="handleDislike(player.currentSongDetail.id)">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                 <path
                   d="M15.5 4l-1 5H22l-2 10H6v-9l6-6 3.5 4zM4 19h2v-9H4v9z"
@@ -205,9 +205,6 @@ const playFM = () => {
     console.error('No track ids returned from MusicIdList', idRes)
     return
   }
-  // 把标准化的 id 列表加入播放器
-  player.addWholePlaylist(ids)
-
   // 取第一首，先获取可播放 url
   const firstId = ids[0]
 
@@ -215,6 +212,8 @@ const playFM = () => {
   player.playcurrentSong({
     firstId,
   })
+  // 把标准化的 id 列表加入播放器
+  player.addWholePlaylist(ids)
 
   console.log('isplaying', player.isplaying)
 }
