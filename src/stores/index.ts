@@ -299,6 +299,8 @@ export const Player = defineStore(
       const currentIndex = currentSongIndex.value === -1 ? 0 : currentSongIndex.value
       const nextIndex = (currentIndex + 1) % playlist.value.length // 计算下一首歌曲索引
       const song = playlist.value[nextIndex]
+      currentSongTime.value = 0
+      audio.currentTime = currentSongTime.value
       console.log(playmodel.value)
       if (playmodel.value === 'onlyone') {
         const onlyonesong = playlist.value[currentIndex]

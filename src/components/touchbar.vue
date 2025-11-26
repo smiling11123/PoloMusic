@@ -178,7 +178,7 @@
           v-model.number="volume"
           @input="onVolume"
           class="slider volume-slider"
-          :style="{ '--progress': audio.volume * 100 + '%' }"
+          :style="{ '--progress': store.audio.volume * 100 + '%' }"
         />
       </div>
     </div>
@@ -186,8 +186,7 @@
 </template>
 
 <script setup lang="ts">
-// 逻辑部分保持原样，没有任何改动
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, onUnmounted, nextTick } from 'vue'
 import { Player } from '@/stores/index'
 import { pagecontrol } from '@/stores/page'
 import { GetPersonalFM } from '@/api/GetMusicList'
@@ -196,22 +195,19 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const store = Player()
 const pagecontroler = pagecontrol()
-const audio = store.audio
 const currentTime = ref(0)
 const duration = ref(0)
 const seekValue = ref(0)
 const seeking = ref(false)
-const volume = ref(audio?.volume ?? 1)
-const prevVolume = ref(volume.value)
+const volume = ref(store.audiovolume ?? 1) 
+const prevVolume = ref(volume ?? 1)
 
-onMounted(() => {
-  if (!audio) return
-  store.isplaying = false
-  volume.value = store.audiovolume ?? 1
-  audio.volume = volume.value
-  duration.value = store.currentSongDetail.duration || 0
-  currentTime.value = store.currentSongTime || 0
-  seekValue.value = currentTime.value
+// 标记事件是否已绑定，防止重复绑定
+let isEventBound = false
+
+const bindAudioEvents = () => {
+  const audio = store.audio
+  if (!audio || isEventBound) return
 
   audio.addEventListener('timeupdate', () => {
     if (!seeking.value) {
@@ -220,17 +216,60 @@ onMounted(() => {
       store.currentSongTime = currentTime.value
     }
   })
+
   audio.addEventListener('durationchange', () => {
     duration.value = audio.duration || 0
   })
+
   audio.addEventListener('error', (e) => {
     console.error('audio error', e, audio.src)
   })
+  
+  audio.volume = volume.value
+  isEventBound = true
+}
+
+onMounted(() => {
+  if (store.audio) {
+    if(store.audio.paused){
+      store.isplaying = false
+    }
+    bindAudioEvents()
+    duration.value = store.audio.duration || store.currentSongDetail.duration || 0
+    currentTime.value = store.audio.currentTime || store.currentSongTime || 0
+    seekValue.value = currentTime.value
+  }
+})
+
+
+watch(
+  () => store.audio,
+  (newAudio) => {
+    if (newAudio) {
+      isEventBound = false 
+      bindAudioEvents()
+      duration.value = newAudio.duration || 0
+      currentTime.value = store.currentSongTime || 0
+      newAudio.currentTime = currentTime.value
+    }
+  },
+  { immediate: true }
+)
+
+watch(() => store.currentSongDetail, (newVal) => {
+  if (newVal) {
+    nextTick(() => {
+        const audio = store.audio
+        if(audio) {
+            duration.value = audio.duration || newVal.duration || 0
+        }
+    })
+  }
 })
 
 watch(volume, (v) => {
   store.audiovolume = v
-  if (audio) audio.volume = store.audiovolume
+  if (store.audio) store.audio.volume = store.audiovolume
 })
 
 function ShowLyric() {
@@ -251,13 +290,13 @@ function togglePlay() {
   store.togglePlay()
 }
 function onSeek() {
-  if (!audio) return
-  audio.currentTime = seekValue.value
+  if (!store.audio) return
+  store.audio.currentTime = seekValue.value
   currentTime.value = seekValue.value
   store.currentSongTime = seekValue.value
 }
 function onVolume() {
-  if (audio) audio.volume = volume.value
+  if (store.audio) store.audio.volume = volume.value
   if (volume.value > 0) prevVolume.value = volume.value
 }
 function muteToggle() {
@@ -272,9 +311,6 @@ function prev() {
   if (store.playlist?.length) store.playPrevSong ? store.playPrevSong() : store.playNextSong()
 }
 const next = async () => {
-  //store.playNextSong && store.playNextSong()
-  //const nextdata = GetNextPersonalFM()
-  //console.log(nextdata)
   const mappedFmSongs = ref()
   if (store.playFM) {
     if (store.currentSongIndex - store.playlist.length <= 3) {
@@ -290,7 +326,6 @@ const next = async () => {
       }))
       const idRes: any = mappedFmSongs.value
 
-      // 从响应中提取 id 列表（根据你的后端结构调整）
       let ids: number[] = []
       if (Array.isArray(idRes)) {
         ids = idRes.map((v: any) => (typeof v === 'object' ? (v.id ?? v) : v))
@@ -310,10 +345,6 @@ const next = async () => {
     }
   }
   store.playNextSong()
-  console.log('列表', store.currentSongList)
-  console.log('列表id', store.playlist)
-  console.log('当前索引', store.currentSongIndex)
-  console.log('FM下一首')
 }
 
 const TurnIn = (artistid) => {
@@ -326,6 +357,7 @@ const Onlyoneplaymodel = () => {
   store.onlyoneplaymodel()
 }
 </script>
+
 
 <style scoped>
 /* 布局核心：Grid 布局 
@@ -534,8 +566,8 @@ const Onlyoneplaymodel = () => {
 
 .slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 10px;
-  height: 10px;
+  width: 0px;
+  height: 0px;
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);

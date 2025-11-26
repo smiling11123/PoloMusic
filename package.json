@@ -1,6 +1,6 @@
 {
   "name": "polomusic",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "This template should help get you started developing with Vue 3 in Vite.",
   "license": "ISC",
@@ -17,7 +17,7 @@
     "lint": "eslint . --fix --cache",
     "format": "prettier --write src/",
     "start": "electron .",
-    "electron:dev": "concurrently \"vite --mode development\" \" node net/app.js \" \"wait-on http://localhost:3000 && electron .\"",
+    "electron:dev": "concurrently \"vite --mode development\" \" node net/app.js \" \" wait-on http://localhost:3000 && electron .\"",
     "lint-fix": "eslint --fix \"**/*.{js,ts}\"",
     "prepare": "husky install",
     "pkgwin": "pkg . -t node18-win-x64 -C GZip -o bin/app --no-bytecode",
@@ -73,27 +73,14 @@
     "net/data"
   ],
   "dependencies": {
-    "@applemusic-like-lyrics/core": "^0.2.0",
-    "@applemusic-like-lyrics/vue": "^0.2.0",
     "@electron/remote": "^2.1.3",
-    "@neteaseapireborn/api": "^4.29.13",
-    "@pixi/app": "^7.4.3",
-    "@pixi/core": "^7.4.3",
-    "@pixi/display": "^7.4.3",
-    "@pixi/filter-blur": "^7.4.3",
-    "@pixi/filter-bulge-pinch": "^5.1.1",
-    "@pixi/filter-color-matrix": "^7.4.3",
-    "@pixi/sprite": "^7.4.3",
-    "@vueuse/core": "^14.0.0",
-    "element-plus": "^2.11.8",
-    "gsap": "^3.13.0",
-    "jss": "^10.10.0",
-    "jss-preset-default": "^10.10.0",
-    "motion-v": "^1.7.4",
+    "axios": "^1.13.2",
+    "husky": "^9.1.7",
     "pinia": "^3.0.3",
     "pinia-plugin-persistedstate": "^4.7.1",
     "vue": "^3.5.22",
-    "vue-router": "^4.6.3"
+    "vue-router": "^4.6.3",
+    "wait-on":"9.0.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.37.0",
@@ -113,11 +100,10 @@
     "naive-ui": "^2.43.1",
     "prettier": "3.6.2",
     "sass-embedded": "^1.93.2",
-    "vfonts": "^0.0.3",
     "vite": "^7.1.11",
     "vite-plugin-vue-devtools": "^8.0.3",
     "vitest": "^3.2.4",
-    "wait-on": "^9.0.1"
+    "wait-on": "^9.0.3"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
@@ -145,7 +131,7 @@
           ]
         }
       ],
-      "artifactName": "${productName}-Setup-${version}.${ext}" 
+      "artifactName": "${productName}-Setup-${version}.${ext}"
     },
     "nsis": {
       "oneClick": false,

@@ -36,8 +36,8 @@
                 @click="TurnIn(artist.id)"
               >
                 {{ artist.name
-                }}<span v-if="index < player.currentSongDetail.artists.length - 1"> / </span></span
-              >
+                }}<span v-if="index < player.currentSongDetail.artists.length - 1"> / </span>
+              </span>
             </div>
           </div>
           <div class="track-actions">
@@ -59,18 +59,21 @@
         </div>
 
         <div class="progress-bar-wrap">
-          <span class="time">{{ formatTime(player.currentSongTime) }}</span>
+          <span class="time">{{ formatTime(currentTime) }}</span>
           <input
             type="range"
             class="slider progress-slider"
             min="0"
-            :max="duration || 1"
+            :max="Math.max(player.currentSongTime || 1, duration)"
             step="0.1"
             v-model.number="seekValue"
             @change="onSeek"
             @mousedown="isSeeking = true"
             @mouseup="isSeeking = false"
-            :style="{ '--progress': (seekValue / (duration || 1)) * 100 + '%' }"
+            :style="{
+              '--progress':
+                (seekValue / Math.max(player.currentSongTime || 1, duration)) * 100 + '%',
+            }"
           />
           <span class="time">{{ formatTime(duration) }}</span>
         </div>
@@ -104,6 +107,7 @@
               </svg>
             </button>
           </div>
+
           <div class="vol-control">
             <svg
               width="18"
@@ -134,6 +138,7 @@
         ref="scrollRef"
         @scroll="handleUserScroll"
         @wheel="handleUserScroll"
+        @touchstart="handleUserScroll"
       >
         <div class="lyric-spacer-top"></div>
 
@@ -144,7 +149,6 @@
           :class="{
             active: activeIndex === index,
             nearby: Math.abs(activeIndex - index) === 1,
-            far: Math.abs(activeIndex - index) > 2,
           }"
           @click="seekTo(line.time)"
         >
@@ -163,7 +167,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick, toRaw } from 'vue'
 import { Player } from '@/stores/index'
 import { pagecontrol } from '@/stores/page'
 import { useRouter } from 'vue-router'
@@ -179,19 +183,91 @@ const currentTime = ref(0)
 const duration = ref(0)
 const seekValue = ref(0)
 const isSeeking = ref(false)
-const volume = ref(player.audio.volume ?? 1)
+const seeking = ref(false)
+const volume = ref(player.audiovolume ?? 1)
 const prevVolume = ref(volume.value)
-// ==================== 1. 双语歌词解析 ====================
+// ==================== 1. 核心修复：音频事件与状态同步 ====================
+
+// 标记事件是否已绑定，防止重复绑定
+let isEventBound = false
+
+const bindAudioEvents = () => {
+  const audio = player.audio
+  if (!audio || isEventBound) return
+
+  audio.addEventListener('timeupdate', () => {
+    if (!seeking.value) {
+      currentTime.value = audio.currentTime || 0
+      seekValue.value = currentTime.value
+      player.currentSongTime = currentTime.value
+    }
+  })
+
+  audio.addEventListener('durationchange', () => {
+    duration.value = audio.duration || 0
+  })
+
+  audio.addEventListener('error', (e) => {
+    console.error('audio error', e, audio.src)
+  })
+  
+  audio.volume = volume.value
+  isEventBound = true
+}
+
+onMounted(() => {
+  if (player.audio) {
+    if(player.audio.paused){
+      player.isplaying = false
+    }
+    bindAudioEvents()
+    duration.value = player.audio.duration || player.currentSongDetail.duration || 0
+    currentTime.value = player.audio.currentTime || player.currentSongTime || 0
+    seekValue.value = currentTime.value
+  }
+})
+
+watch(
+  () => player.audio,
+  (newAudio) => {
+    if (newAudio) {
+      isEventBound = false 
+      bindAudioEvents()
+      duration.value = newAudio.duration || 0
+      currentTime.value = player.currentSongTime || 0
+      newAudio.currentTime = currentTime.value
+    }
+  },
+  { immediate: true }
+)
+
+watch(() => player.currentSongDetail, (newVal) => {
+  if (newVal) {
+    nextTick(() => {
+        const audio = player.audio
+        if(audio) {
+            duration.value = audio.duration || newVal.duration || 0
+        }
+    })
+  }
+})
+
+watch(volume, (v) => {
+  player.audiovolume = v
+  if (player.audio) player.audio.volume = player.audiovolume
+})
+
+// ==================== 2. 双语歌词解析 (保持逻辑不变) ====================
 interface LyricLine {
   time: number
   text: string
   translation?: string
 }
 
-// 辅助：解析单字符串为数组
 const parseLrcStr = (lrc) => {
   const lines: { time: number; text: string }[] = []
   const regex = /\[(\d{2}):(\d{2})(\.\d{2,3})?\]/
+  if (!lrc) return []
   for (const line of lrc.split('\n')) {
     const match = regex.exec(line)
     if (match) {
@@ -211,15 +287,9 @@ const lyricLines = computed<LyricLine[]>(() => {
   const rawLyric = player.currentSongLyric
   if (!rawLyric) return []
 
-  // 1. 解析原文
   const origins = parseLrcStr(rawLyric)
-
-  // 2. 解析译文 (如果存在)
   const rawTrans = player.currentSongTLyric || null
   const translations = rawTrans ? parseLrcStr(rawTrans) : []
-
-  // 3. 合并逻辑：转为 Map 以时间为 key 匹配
-  // 注意：时间戳可能有细微差异，这里使用 toFixed(1) 模糊匹配前一位小数
   const transMap = new Map(translations.map((t) => [t.time.toFixed(1), t.text]))
 
   return origins.map((line) => {
@@ -231,109 +301,32 @@ const lyricLines = computed<LyricLine[]>(() => {
   })
 })
 
-// ==================== 2. 滚动与定位核心逻辑 ====================
+// ==================== 3. 滚动与定位逻辑 ====================
 const scrollRef = ref<HTMLElement | null>(null)
 const activeIndex = ref(0)
 const isUserScrolling = ref(false)
 let scrollTimeout: any = null
-let rafId: number | null = null
-const lyricLineRefs = ref<HTMLElement[]>([])
 
-const setLyricLineRef = (el: any, index: number) => {
-  if (el) lyricLineRefs.value[index] = el
-}
-onMounted(() => {
-  const audio = player.audio
-  volume.value = player.audiovolume ?? 1
-  if (audio) {
-    // 初始化状态
-    audio.volume = volume.value
-    duration.value = player.currentSongDetail.duration || audio.duration || 0
-    currentTime.value = player.currentSongTime || 0
-    seekValue.value = currentTime.value
-
-    // 绑定事件
-    audio.addEventListener('timeupdate', onTimeUpdate)
-    audio.addEventListener('durationchange', () => (duration.value = audio.duration))
+// 监听歌词变化重置
+watch(lyricLines, async (newLyrics) => {
+  if (newLyrics.length > 0) {
+    activeIndex.value = 0
+    await nextTick()
+    scrollToTop('auto')
+    setTimeout(() => scrollToActive('smooth'), 100)
   }
-
-  // 核心：组件挂载后立即执行一次定位 (使用 auto 模式瞬间跳转)
-  //initScrollPosition()
-  nextTick(() => scrollToActive('smooth'))
 })
 
-onUnmounted(() => {
-  const audio = player.audio
-  //if (audio) {
-  //audio.removeEventListener('timeupdate', onTimeUpdate)
-  //}
-})
-
-const onTimeUpdate = () => {
-  if (!player.audio) return
-  if (!isSeeking.value) {
-    const t = player.audio.currentTime
-    currentTime.value = t
-    seekValue.value = t
-    player.currentSongTime = t
-  }
-}
-// 监听歌词数据变化（重要！解决切换歌曲后定位问题）
-watch(
-  lyricLines,
-  async (newLyrics) => {
-    if (newLyrics.length > 0) {
-      activeIndex.value = 0
-      await nextTick()
-      scrollToTop('auto')
-      setTimeout(() => scrollToActive('smooth'), 100)
-    } else {
-      scrollToTop('auto')
-    }
-  },
-  { immediate: true },
-)
-// 监听时间变化，更新高亮行
+// 监听时间更新歌词位置
 watch(
   () => currentTime.value,
   (newTime) => {
     updateActiveIndex(newTime)
   },
 )
-const waitForLyricsLoaded = async () => {
-  // 等待 lyricLines computed 更新
-  await nextTick()
-  // 确保有歌词数据
-  if (lyricLines.value.length === 0) {
-    // 没有歌词，滚动到中间显示"纯音乐"
-    setTimeout(() => scrollToActive('smooth'), 100)
-  }
-}
-// 监听歌曲切换（强制重置状态）
-watch(
-  () => player.currentSong,
-  async () => {
-    // 立即重置所有状态
-    activeIndex.value = 0
-    currentTime.value = 0
-    seekValue.value = 0
-    isUserScrolling.value = false
-
-    // 先清空歌词引用
-    lyricLineRefs.value = []
-    scrollToTop('auto') // 立即清除旧歌词位置
-    // 等待歌词数据加载
-    await waitForLyricsLoaded()
-  },
-)
 
 function updateActiveIndex(time: number) {
-  if (lyricLines.value.length === 0) {
-    activeIndex.value = 0
-    return
-  }
-
-  // 二分查找
+  if (lyricLines.value.length === 0) return
   let left = 0
   let right = lyricLines.value.length - 1
   let targetIndex = 0
@@ -354,69 +347,42 @@ function updateActiveIndex(time: number) {
   }
 
   if (targetIndex !== activeIndex.value) {
-    console.log(`[Lyric] 激活索引变化：${activeIndex.value} -> ${targetIndex}`)
     activeIndex.value = targetIndex
     scrollToActive('smooth')
   }
 }
+
 const scrollToTop = (behavior: ScrollBehavior = 'auto') => {
-  if (!scrollRef.value) return
-  scrollRef.value.scrollTo({ top: 0, behavior })
-}
-// 打开界面时的初始化定位
-const initScrollPosition = async () => {
-  activeIndex.value = 0
-  currentTime.value = player.currentSongTime
-  seekValue.value = currentTime.value
-
-  // 立即滚动到顶部（清除旧位置）
-  scrollToTop('auto')
-
-  // 等待 DOM 更新
-  await nextTick()
-
-  // 根据当前时间定位
-  updateActiveIndex(currentTime.value)
-
-  // 延迟执行，确保歌词渲染完成
-  setTimeout(() => {
-    scrollToActive('smooth')
-  }, 100)
+  if (scrollRef.value) scrollRef.value.scrollTo({ top: 0, behavior })
 }
 
 function scrollToActive(behavior: ScrollBehavior = 'smooth') {
   if (isUserScrolling.value || !scrollRef.value) return
-
   const container = scrollRef.value
-  // +1 是因为第一个元素是 spacer-top
   const activeEl = container.children[activeIndex.value + 1] as HTMLElement
-
   if (activeEl) {
-    // 计算位置：将当前歌词置于视口垂直方向的 40% 处 (符合人眼习惯)
-    const top = activeEl.offsetTop - container.clientHeight * 0.4
-    container.scrollTo({ top, behavior })
+    const containerHeight = container.clientHeight
+    const offset = activeEl.offsetTop - containerHeight * 0.38
+    container.scrollTo({ top: offset, behavior })
   }
 }
 
-// 用户手动滚动时的防抖
 function handleUserScroll() {
   isUserScrolling.value = true
   if (scrollTimeout) clearTimeout(scrollTimeout)
-  // 2秒无操作后，恢复自动滚动
   scrollTimeout = setTimeout(() => {
     isUserScrolling.value = false
-  }, 1000)
+  }, 1200)
 }
 
-// ==================== 3. 控制交互 ====================
+// ==================== 4. 交互控制 ====================
 function togglePlay() {
   player.togglePlay()
 }
+
 const next = async () => {
-  scrollToTop('smooth')
-  player.playNextSong && player.playNextSong()
-  const mappedFmSongs = ref()
   if (player.playFM) {
+    const mappedFmSongs = ref()
     if (player.currentSongIndex - player.playlist.length <= 3) {
       const fmRes = await GetPersonalFM()
       const fmList = fmRes.data
@@ -429,8 +395,6 @@ const next = async () => {
         cover: song.album?.picUrl,
       }))
       const idRes: any = mappedFmSongs.value
-
-      // 从响应中提取 id 列表（根据你的后端结构调整）
       let ids: number[] = []
       if (Array.isArray(idRes)) {
         ids = idRes.map((v: any) => (typeof v === 'object' ? (v.id ?? v) : v))
@@ -441,33 +405,29 @@ const next = async () => {
       } else if (idRes?.id) {
         ids = [idRes.id]
       }
-
-      if (!ids.length) {
-        console.error('No track ids returned from MusicIdList', idRes)
-        return
-      }
+      if (!ids.length) return
       player.addSongsToPlaylist(ids)
     }
   }
+  player.playNextSong && player.playNextSong()
 }
+
 function prev() {
-  scrollToTop('smooth')
   player.playPrevSong ? player.playPrevSong() : player.playNextSong()
 }
 
 function onSeek() {
-  if (player.audio) {
-    player.audio.currentTime = seekValue.value
-    player.currentSongTime = seekValue.value
-  }
+  if (!player.audio) return
+  player.audio.currentTime = seekValue.value
+  currentTime.value = seekValue.value
+  player.currentSongTime = seekValue.value
 }
 
 function seekTo(time: number) {
   if (player.audio) {
     player.audio.currentTime = time
     currentTime.value = time
-    player.currentSongTime = time
-    isUserScrolling.value = false // 强制解除手动锁定
+    isUserScrolling.value = false // 点击歌词跳转时，强制接管滚动
     nextTick(() => scrollToActive('smooth'))
   }
 }
@@ -482,16 +442,13 @@ function formatTime(s: number) {
   const sec = (s % 60).toString().padStart(2, '0')
   return `${m}:${sec}`
 }
+
 function onVolume() {
   if (player.audio) player.audio.volume = volume.value
   if (volume.value > 0) prevVolume.value = volume.value
 }
-watch(volume, (v) => {
-  player.audiovolume = v
-  if (player.audio) player.audio.volume = player.audiovolume
-})
 
-const TurnIn = (artistid) => {
+const TurnIn = (artistid: number) => {
   pageCtrl.ShowLyric = false
   router.push({ name: 'artist', params: { id: artistid } })
 }
@@ -505,29 +462,31 @@ const TurnIn = (artistid) => {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 2000; /* 确保覆盖主界面 */
-  background: #121212;
+  z-index: 2000;
+  background: #000; /* 纯黑底色 */
   color: #fff;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', sans-serif;
   user-select: none;
   overflow: hidden;
 }
 
-/* 背景：深色模糊光晕 */
+/* 背景层：重度模糊 */
 .bg-layer {
   position: absolute;
   inset: -60px;
   background-size: cover;
   background-position: center;
-  /* 关键：高斯模糊 + 饱和度提升 */
-  filter: blur(80px) saturate(180%) brightness(0.5);
+  /* 关键：高模糊、高饱和、低亮度 */
+  filter: blur(100px) saturate(220%) brightness(0.4);
   z-index: 1;
-  transition: background-image 0.5s ease;
+  opacity: 0.8;
+  transform: scale(1.1);
+  transition: background-image 0.8s ease;
 }
 .bg-mask {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.2);
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.5));
   z-index: 2;
 }
 
@@ -536,17 +495,18 @@ const TurnIn = (artistid) => {
   top: 30px;
   right: 30px;
   z-index: 10;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   border: none;
-  border-radius: 8px;
-  width: 40px;
-  height: 40px;
+  border-radius: 12px;
+  width: 44px;
+  height: 44px;
   color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
+  backdrop-filter: blur(10px);
 }
 .close-btn:hover {
   background: rgba(255, 255, 255, 0.2);
@@ -560,19 +520,19 @@ const TurnIn = (artistid) => {
   width: 100%;
   height: 100%;
   display: grid;
-  /* 桌面端：左 45% - 右 55% */
-  grid-template-columns: 45% 55%;
-  padding: 0 6%;
+  /* 调整比例：左侧稍微窄一点，给歌词更多空间 */
+  grid-template-columns: 42% 58%;
+  padding: 0 4%;
   box-sizing: border-box;
 }
 
-/* ================= 左侧列 ================= */
+/* ================= 左侧：控制区 ================= */
 .left-column {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding-right: 80px;
-  max-width: 560px;
+  padding-right: 60px;
+  max-width: 500px;
   width: 100%;
   justify-self: end;
   height: 100vh;
@@ -583,9 +543,10 @@ const TurnIn = (artistid) => {
   aspect-ratio: 1/1;
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5); /* 更有深度的阴影 */
   margin-bottom: 40px;
   background: #222;
+  transition: transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 .album-cover {
   width: 100%;
@@ -600,7 +561,7 @@ const TurnIn = (artistid) => {
   margin-bottom: 24px;
 }
 .song-title {
-  font-size: 32px;
+  font-size: 30px;
   font-weight: 700;
   margin: 0 0 8px 0;
   line-height: 1.2;
@@ -608,58 +569,42 @@ const TurnIn = (artistid) => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  letter-spacing: -0.5px;
 }
 .artist-name {
   font-size: 18px;
   color: rgba(255, 255, 255, 0.6);
   margin: 0;
-  span {
-    cursor: pointer;
-    &:hover {
-      color: #fff;
-    }
-  }
+  font-weight: 500;
 }
-.like-btn {
-  width: 30px;
-  height: 30px;
-  background: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.5);
+.artist-name span {
   cursor: pointer;
-  transition: all 0.5s;
-  padding: 0;
-  border-radius: 8px;
-  transition: color 0.5s;
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-  }
+  transition: color 0.2s;
 }
+.artist-name span:hover {
+  color: #fff;
+}
+
+.like-btn,
 .icon-btn {
   background: transparent;
   border: none;
   color: rgba(255, 255, 255, 0.5);
   cursor: pointer;
   padding: 0;
-  transition: all 0.5s;
-  display: flex;
-  border-radius: 4px;
-  transition: color 0.5s;
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-  }
+  transition: all 0.3s;
 }
-.icon-btn,
-.like-btn:hover {
+.like-btn:hover,
+.icon-btn:hover {
   color: #fff;
   transform: scale(1.1);
 }
-.icon-btn,
-.like-btn:active {
+.like-btn:active,
+.icon-btn:active {
   transform: scale(0.95);
 }
 
-/* 进度条与 Slider */
+/* 进度条 */
 .progress-bar-wrap {
   display: flex;
   align-items: center;
@@ -672,7 +617,6 @@ const TurnIn = (artistid) => {
   width: 40px;
   font-variant-numeric: tabular-nums;
 }
-
 .slider {
   -webkit-appearance: none;
   appearance: none;
@@ -683,7 +627,6 @@ const TurnIn = (artistid) => {
   cursor: pointer;
   position: relative;
   flex: 1;
-  /* 进度着色 */
   background: linear-gradient(
     to right,
     #fff 0%,
@@ -694,21 +637,22 @@ const TurnIn = (artistid) => {
 }
 .slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
+  width: 0px;
+  height: 0px;
   border-radius: 50%;
   background: #fff;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.2s;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
-.progress-bar-wrap:hover .slider::-webkit-slider-thumb,
-.vol-control:hover .slider::-webkit-slider-thumb {
+.slider:hover::-webkit-slider-thumb {
   opacity: 1;
+  transform: scale(1.2);
 }
 
-/* 底部控制区 */
 .controls-row {
   justify-content: center;
   align-items: center;
@@ -717,7 +661,7 @@ const TurnIn = (artistid) => {
   display: flex;
   justify-self: center;
   align-items: center;
-  gap: 52px;
+  gap: 48px;
   padding: 20px;
 }
 .main-controls .lg {
@@ -729,101 +673,121 @@ const TurnIn = (artistid) => {
   justify-self: center;
   gap: 10px;
   width: 80%;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+.vol-control:hover {
+  opacity: 1;
 }
 
-/* ================= 右侧：歌词 ================= */
+/* ================= 右侧：歌词 (重构重点) ================= */
 .right-column {
   height: 100vh;
   overflow-y: auto;
-  scrollbar-width: none; /* Firefox */
-  /* 遮罩：上下边缘渐隐 */
-  mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 80%, transparent 100%);
+  scrollbar-width: none;
+  /* 遮罩：让顶部和底部的歌词柔和消失 */
+  mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
   -webkit-mask-image: linear-gradient(
     to bottom,
     transparent 0%,
-    black 10%,
-    black 80%,
+    black 15%,
+    black 85%,
     transparent 100%
   );
-
   display: flex;
   flex-direction: column;
   align-items: flex-start; /* 左对齐 */
-  padding-left: 40px;
+  padding-left: 50px;
+  padding-right: 60px;
+  box-sizing: border-box;
+  cursor: grab;
+  scroll-behavior: smooth; /* CSS 平滑滚动 */
+}
+.right-column:active {
+  cursor: grabbing;
 }
 .right-column::-webkit-scrollbar {
   display: none;
 }
 
-/* 占位符 */
+/* 占位符：调整这些高度来改变第一句和最后一句歌词的位置 */
 .lyric-spacer-top {
-  height: 40vh;
+  height: 45vh;
   flex-shrink: 0;
 }
 .lyric-spacer-bottom {
-  height: 60vh;
+  height: 55vh;
   flex-shrink: 0;
 }
 
-/* 单行歌词 */
 .lyric-line {
-  margin-bottom: 28px;
+  margin-bottom: 26px;
   cursor: pointer;
-  transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  /* 核心动画：弹簧曲线 (Spring Bezier) */
+  transition:
+    color 1.5s,
+    transform 1.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+    filter 1.5s,
+    opacity 1.5s;
   transform-origin: left center;
-
-  /* 默认未激活样式 */
-  color: rgba(255, 255, 255, 0.4);
-  transform: scale(0.95);
-  filter: blur(0.8px);
+  will-change: transform, filter, opacity; /* 性能优化 */
 
   display: flex;
   flex-direction: column;
-  gap: 6px; /* 双语间距 */
+  gap: 8px;
+
+  /* --- 默认状态 (未激活) --- */
+  color: rgba(255, 255, 255, 0.4); /* 变暗 */
+  transform: scale(0.9) translateX(-15px); /* 缩小并左移 */
+  filter: blur(2px); /* 深度模糊 */
+  opacity: 0.6;
 }
 
 .lyric-line:hover {
-  color: rgba(255, 255, 255, 0.7);
-  filter: blur(0);
-}
-
-/* 原文样式 */
-.lyric-origin {
-  font-size: 28px;
-  font-weight: 700;
-  line-height: 1.3;
-}
-/* 译文样式 */
-.lyric-trans {
-  font-size: 20px;
-  font-weight: 500;
-  opacity: 0.8;
-  line-height: 1.4;
-}
-
-/* 激活状态 */
-.lyric-line.active {
-  color: #fff;
-  transform: scale(1);
-  filter: blur(0);
-  margin-bottom: 36px; /* 增加间距 */
-}
-.lyric-line.active .lyric-origin {
-  font-size: 36px; /* 激活时更大 */
-  text-shadow: 0 0 30px rgba(255, 255, 255, 0.25);
-}
-.lyric-line.active .lyric-trans {
-  font-size: 24px;
+  filter: blur(0px) !important;
+  opacity: 1 !important;
   color: rgba(255, 255, 255, 0.8);
 }
 
-/* 暂无歌词 */
+/* --- 临近状态 (Active 上下一行) --- */
+.lyric-line.nearby {
+  filter: blur(1px);
+  opacity: 0.8;
+  transform: scale(0.95) translateX(-8px);
+}
+
+/* --- 激活状态 (Active) --- */
+.lyric-line.active {
+  color: #fff;
+  /* 放大并归位 */
+  transform: scale(1.05) translateX(0);
+  filter: blur(0);
+  opacity: 1;
+  margin-bottom: 34px; /* 增加激活行的间距 */
+
+  /* 柔和发光效果 */
+  text-shadow: 0 0 24px rgba(255, 255, 255, 0.4);
+}
+
+.lyric-origin {
+  font-size: 42px;
+  font-weight: 1000; /* 加粗 */
+  line-height: 1.25;
+  letter-spacing: -0.5px;
+}
+.lyric-trans {
+  font-size: 30px;
+  font-weight: 800;
+  opacity: 0.7;
+  line-height: 1.4;
+}
+
 .no-lyric-tip {
   height: 200px;
   display: flex;
   align-items: center;
-  opacity: 0.5;
-  font-size: 24px;
+  font-size: 42px;
+  color: rgba(255, 255, 255, 0.4);
   letter-spacing: 2px;
 }
 
@@ -831,41 +795,46 @@ const TurnIn = (artistid) => {
 @media (max-width: 900px) {
   .content-layout {
     grid-template-columns: 1fr;
-    padding: 20px;
-    overflow-y: auto;
-    display: block; /* 转为块级布局 */
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    &::-webkit-scrollbar {
-      display: none;
-      width: 0 !important;
-      height: 0 !important;
-    }
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+    padding: 24px;
+    display: block;
+    overflow-y: auto; /* 允许页面整体滚动 */
   }
+
   .left-column {
     height: auto;
     padding-right: 0;
-    max-width: 400px;
-    margin: 60px auto 40px;
+    max-width: 380px;
+    margin: 50px auto 30px;
     justify-self: center;
   }
   .cover-wrapper {
-    margin-bottom: 30px;
+    margin-bottom: 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
   }
   .song-title {
     font-size: 24px;
+    text-align: center;
+  }
+  .artist-name {
+    text-align: center;
+  }
+  .track-info {
+    display: block;
+    text-align: center;
+  }
+  .track-actions {
+    display: none; /* 移动端简化，隐藏点赞 */
   }
 
+  /* 移动端歌词样式调整 */
   .right-column {
-    height: auto; /* 让页面自然滚动 */
+    height: auto; /* 不定高 */
     overflow: visible;
     padding-left: 0;
-    align-items: center;
+    align-items: center; /* 居中 */
     mask-image: none;
     -webkit-mask-image: none;
-    padding-bottom: 100px;
+    padding-bottom: 150px;
   }
   .lyric-spacer-top,
   .lyric-spacer-bottom {
@@ -875,23 +844,23 @@ const TurnIn = (artistid) => {
   .lyric-line {
     align-items: center;
     text-align: center;
-    transform-origin: center;
+    transform-origin: center; /* 中心缩放 */
     margin-bottom: 20px;
+
+    /* 移动端减弱模糊，为了性能 */
+    filter: blur(1px);
+    transform: scale(0.95);
   }
   .lyric-line.active {
     transform: scale(1.05);
+    filter: blur(0);
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
   }
   .lyric-origin {
-    font-size: 22px;
+    font-size: 24px;
   }
   .lyric-trans {
     font-size: 16px;
-  }
-  .lyric-line.active .lyric-origin {
-    font-size: 26px;
-  }
-  .lyric-line.active .lyric-trans {
-    font-size: 18px;
   }
 }
 </style>
