@@ -12,9 +12,10 @@ export const userInfo = defineStore('userInfo', () => {
   const signature = ref(userProfile.value ? JSON.parse(userProfile.value).signature || null : null)
   const profileVillageInfoUrl = ref(userDetail.value ? JSON.parse(userDetail.value).profileVillageInfo.imageUrl || null : null)
   const cookies = ref(localStorage.getItem('neteaseCookie') || null)
+  const viptype = ref(userProfile.value ? JSON.parse(userProfile.value).viptype || null : 0)
 
   // 定义持久化配置
-  return { userProfile, userDetail, userId, avatarUrl, nickname, backgroundUrl, signature, profileVillageInfoUrl, cookies }
+  return { userProfile, userDetail, userId, avatarUrl, nickname, backgroundUrl, signature, profileVillageInfoUrl, cookies, viptype }
 }, {
   persist: true,
 })

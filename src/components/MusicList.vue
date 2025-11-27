@@ -120,27 +120,13 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Player } from '@/stores/index'
+import type { SongItem } from '@/stores/index'
 import { GetMusicFromList } from '@/api/GetMusicFromList'
 
-const playerStore = Player()
+const player = Player()
 const router = useRouter()
 const route = useRoute()
 const isLoading = ref(true)
-// --- 数据接口定义 ---
-interface Artist {
-  id: number
-  name: string
-}
-
-interface SongItem {
-  id: number
-  name: string
-  alias?: string // 歌曲别名（如：抖音DJ版）
-  artists: Artist[]
-  album: string
-  cover: string
-  duration?: number
-}
 
 const playlist = ref<any>({
   id: 0,
@@ -154,7 +140,7 @@ const playlist = ref<any>({
 })
 
 const songs = ref<SongItem[]>([])
-const currentSongId = computed(() => playerStore.currentSong || null)
+const currentSongId = computed(() => player.currentSong || null)
 
 const MusicListId = computed(() => {
   const id = route.params.id
@@ -225,18 +211,20 @@ function formatTime(s: number) {
 
 function playAll() {
   if (songs.value.length) {
-    playerStore.playFM = false
-    playerStore.playnormal = true
-    playerStore.playcurrentSong(songs.value[0].id)
-    playerStore.addWholePlaylist(songs.value.map((s) => s.id))
+    player.playFM = false
+    player.playnormal = true
+    player.nextSongUrl = null
+    player.playcurrentSong(songs.value[0].id)
+    player.addWholePlaylist(songs.value.map((s) => s.id))
   }
 }
 
 function playSong(song: SongItem, index: number) {
-  playerStore.playFM = false
-  playerStore.playnormal = true
-  playerStore.playcurrentSong(song.id)
-  playerStore.addWholePlaylist(songs.value.map((s) => s.id))
+  player.playFM = false
+  player.playnormal = true
+  player.nextSongUrl = null
+  player.playcurrentSong(song.id)
+  player.addWholePlaylist(songs.value.map((s) => s.id))
 }
 
 const TurnIn = (artistid) => {

@@ -92,7 +92,8 @@ import { Player } from '@/stores/index'
 import { GetMusicDetail } from '@/api/GetMusic'
 import { GetSearchData } from '@/api/Search'
 import { search } from '@/stores/search'
-const playerStore = Player()
+import type { SongItem } from '@/stores/index'
+const player = Player()
 const router = useRouter()
 const isLoading = ref(false)
 const isLoadingMore = ref(false)
@@ -101,23 +102,9 @@ const offset = ref(0)
 const limit = 50
 const isWholeListMode = ref(false)
 const searcher = search()
-// --- 数据接口定义 ---
-interface Artist {
-  id: number
-  name: string
-}
 
-interface SongItem {
-  id: number
-  name: string
-  alias?: string // 歌曲别名（如：抖音DJ版）
-  artists: Artist[]
-  album: string
-  cover: string
-  duration?: number
-}
 const songs = ref<SongItem[]>([])
-const currentSongId = computed(() => playerStore.currentSong || null)
+const currentSongId = computed(() => player.currentSong || null)
 const addsongs = ref<SongItem[]>([])
 const songsList = ref<SongItem[]>([])
 async function loadWholelistData(loadMore = false) {
@@ -232,18 +219,20 @@ function formatTime(s: number) {
 
 function playAll() {
   if (songs.value.length) {
-    playerStore.playFM = false
-    playerStore.playnormal = true
-    playerStore.addWholePlaylist(songs.value.map((s) => s.id))
-    playerStore.playcurrentSong(songs.value[0].id)
+    player.playFM = false
+    player.playnormal = true
+    player.nextSongUrl = null
+    player.addWholePlaylist(songs.value.map((s) => s.id))
+    player.playcurrentSong(songs.value[0].id)
   }
 }
 
 function playSong(song: SongItem, index: number) {
-  playerStore.playFM = false
-  playerStore.playnormal = true
-  playerStore.addWholePlaylist(songs.value.map((s) => s.id))
-  playerStore.playcurrentSong(song.id)
+  player.playFM = false
+  player.playnormal = true
+  player.nextSongUrl = null
+  player.addWholePlaylist(songs.value.map((s) => s.id))
+  player.playcurrentSong(song.id)
 }
 const TurnIn = (artistid) => {
   router.push({name: 'artist', params: { id: artistid } } )

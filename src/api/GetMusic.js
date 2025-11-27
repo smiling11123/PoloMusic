@@ -40,26 +40,12 @@ export const GetMusicLyric = async (params) => {
     params: {id: params},
   }).then((res) => res.data)
 }
-//
-export const GetWordMusicLyric = async (param) => {
-  try {
-    const response = await requestwordlyric({
-      url: `/${param}.yrc`,
-    })
-    
-    // 如果是 axios 实例，2xx 状态会到这里
-    return response.data || response // 根据你的 requestwordlyric 配置
-    
-  } catch (error) {
-    // 捕获错误
-    if (error.response?.status === 404) {
-      console.warn(`歌词未找到: 歌曲ID ${param}`)
-      return null // ✅ 返回 null 表示无歌词
-    }
-    
-    console.error('获取歌词失败:', error)
-    return null // 其他错误也返回 null
-  }
+//获取逐字歌词
+export const GetWordMusicLyric = async (params) => {
+  return request({
+    url: '/lyric/new',
+    params: {id: params},
+  }).then((res) => res.data)
 }
 export const GetMusicPicUrl = async (params) => {
   return request({

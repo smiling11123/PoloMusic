@@ -153,6 +153,12 @@ async function play() {
   player.isplaying = true
   player.playnormal = true
   player.playFM = false
+  const firstId = idRes[0].id
+  player.nextSongUrl = null
+  // 调用播放（如果 store.playcurrentSong 支持传 url，可直接传；否则按你现有逻辑处理）
+  player.playcurrentSong({
+    firstId,
+  })
   // 从响应中提取 id 列表（根据你的后端结构调整）
   let ids: number[] = []
   if (Array.isArray(idRes)) {
@@ -174,12 +180,7 @@ async function play() {
   player.addWholePlaylist(ids)
 
   // 取第一首，先获取可播放 url
-  const firstId = ids[0]
-
-  // 调用播放（如果 store.playcurrentSong 支持传 url，可直接传；否则按你现有逻辑处理）
-  player.playcurrentSong({
-    firstId,
-  })
+  
 
   console.log('isplaying', player.isplaying)
 }
@@ -208,7 +209,7 @@ const playFM = () => {
   }
   // 取第一首，先获取可播放 url
   const firstId = ids[0]
-
+  player.nextSongUrl = null
   // 调用播放（如果 store.playcurrentSong 支持传 url，可直接传；否则按你现有逻辑处理）
   player.playcurrentSong({
     firstId,

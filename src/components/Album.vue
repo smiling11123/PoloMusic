@@ -116,7 +116,7 @@ import type { SongItem } from '@/stores/index'
 import { GetMusicDetail } from '@/api/GetMusic'
 import { GetAlbum } from '@/api/Album'
 
-const playerStore = Player()
+const player = Player()
 const route = useRoute()
 const router = useRouter()
 const isLoading = ref(true)
@@ -129,7 +129,7 @@ const AlbumDetail = ref<any>({
 })
 
 const songs = ref<SongItem[]>([])
-const currentSongId = computed(() => playerStore.currentSong || null)
+const currentSongId = computed(() => player.currentSong || null)
 
 const ArtistId = computed(() => {
   const artistid = route.params.id
@@ -233,19 +233,19 @@ function formatTime(s: number) {
 }
 
 function playAll() {
-  playerStore.playFM = false
-  playerStore.playnormal = true
+  player.playFM = false
+  player.playnormal = true
   if (songs.value.length) {
-    playerStore.addWholePlaylist(songs.value.map((s) => s.id))
-    playerStore.playcurrentSong(songs.value[0].id)
+    player.addWholePlaylist(songs.value.map((s) => s.id))
+    player.playcurrentSong(songs.value[0].id)
   }
 }
 
 function playSong(song: SongItem, index: number) {
-  playerStore.playFM = false
-  playerStore.playnormal = true
-  playerStore.addWholePlaylist(songs.value.map((s) => s.id))
-  playerStore.playcurrentSong(song.id)
+  player.playFM = false
+  player.playnormal = true
+  player.addWholePlaylist(songs.value.map((s) => s.id))
+  player.playcurrentSong(song.id)
 }
 
 const TurnIn = (artistid) => {

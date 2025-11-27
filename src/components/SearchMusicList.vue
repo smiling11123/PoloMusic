@@ -82,7 +82,7 @@ import { search } from '@/stores/search'
 
 const searcher = search()
 const router = useRouter()
-const store = Player()
+const player = Player()
 
 interface Item {
   image: string
@@ -192,8 +192,8 @@ const TurnIn = (item: Item) => {
 
 async function play(item: Item) {
   try {
-    store.playFM = false
-    store.playnormal = true
+    player.playFM = false
+    player.playnormal = true
     if (!item?.id) {
       console.warn('play: missing item.id', item)
       return
@@ -222,15 +222,15 @@ async function play(item: Item) {
     // 取第一首，先获取可播放 url
     const firstId = ids[0]
     console.log('First track id to play:', firstId)
-
+    player.nextSongUrl = null
     // 调用播放（如果 store.playcurrentSong 支持传 url，可直接传；否则按你现有逻辑处理）
-    store.playcurrentSong({
+    player.playcurrentSong({
       firstId,
     })
     // 把标准化的 id 列表加入播放器
-    store.addWholePlaylist(ids)
+    player.addWholePlaylist(ids)
 
-    console.log('isplaying', store.isplaying)
+    console.log('isplaying', player.isplaying)
   } catch (err) {
     console.error('play failed:', err)
   }

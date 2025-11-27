@@ -54,7 +54,7 @@ import { search } from '@/stores/search'
 
 const searcher = search()
 const router = useRouter()
-const store = Player()
+const player = Player()
 
 interface Item {
   image: string
@@ -159,49 +159,6 @@ const TurnIn = (item: Item) => {
 }
 
 async function play(item: Item) {
-  try {
-    if (!item?.id) {
-      console.warn('play: missing item.id', item)
-      return
-    }
-    console.log(typeof item.id)
-    // 注意：以对象形式传参（避免 toFormData 报错）
-    const idRes: any = await MusicIdList({ id: item.id })
-    console.log('MusicIdList response:', idRes)
-
-    // 从响应中提取 id 列表（根据你的后端结构调整）
-    let ids: number[] = []
-    if (Array.isArray(idRes)) {
-      ids = idRes.map((v: any) => (typeof v === 'object' ? (v.id ?? v) : v))
-    } else if (Array.isArray(idRes?.ids)) {
-      ids = idRes.ids.map((v: any) => (typeof v === 'object' ? (v.id ?? v) : v))
-    } else if (Array.isArray(idRes?.data)) {
-      ids = idRes.data.map((v: any) => (typeof v === 'object' ? (v.id ?? v) : v))
-    } else if (idRes?.id) {
-      ids = [idRes.id]
-    }
-
-    if (!ids.length) {
-      console.error('No track ids returned from MusicIdList', idRes)
-      return
-    }
-
-    // 把标准化的 id 列表加入播放器
-    store.addWholePlaylist(ids)
-
-    // 取第一首，先获取可播放 url
-    const firstId = ids[0]
-    console.log('First track id to play:', firstId)
-
-    // 调用播放（如果 store.playcurrentSong 支持传 url，可直接传；否则按你现有逻辑处理）
-    store.playcurrentSong({
-      firstId,
-    })
-
-    console.log('isplaying', store.isplaying)
-  } catch (err) {
-    console.error('play failed:', err)
-  }
 }
 </script>
 

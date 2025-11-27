@@ -19,11 +19,11 @@
     </button>
 
     <div class="content-layout">
+      <!-- 左侧控制区 (保持不变) -->
       <div class="left-column">
         <div class="cover-wrapper">
           <img :src="coverUrl" alt="cover" class="album-cover" />
         </div>
-
         <div class="track-info">
           <div class="info-text">
             <h2 class="song-title" :title="player.currentSongDetail.name">
@@ -57,7 +57,6 @@
             </button>
           </div>
         </div>
-
         <div class="progress-bar-wrap">
           <span class="time">{{ formatTime(currentTime) }}</span>
           <input
@@ -65,11 +64,14 @@
             class="slider progress-slider"
             min="0"
             :max="Math.max(player.currentSongTime || 1, duration)"
-            step="0.1"
-            v-model.number="seekValue"
-            @change="onSeek"
-            @mousedown="isSeeking = true"
-            @mouseup="isSeeking = false"
+            step="0.01"
+            :value="seekValue"
+            @input="onSliderInput"
+            @change="onSliderChange"
+            @mousedown="startSeek"
+            @touchstart="startSeek"
+            @mouseup="endSeek"
+            @touchend="endSeek"
             :style="{
               '--progress':
                 (seekValue / Math.max(player.currentSongTime || 1, duration)) * 100 + '%',
@@ -77,7 +79,6 @@
           />
           <span class="time">{{ formatTime(duration) }}</span>
         </div>
-
         <div class="controls-row">
           <div class="main-controls">
             <button class="icon-btn secondary" @click="prev">
@@ -85,7 +86,6 @@
                 <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
               </svg>
             </button>
-
             <button class="icon-btn lg" @click="togglePlay">
               <svg
                 v-if="player.isplaying"
@@ -100,14 +100,12 @@
                 <path d="M8 5v14l11-7z" />
               </svg>
             </button>
-
             <button class="icon-btn secondary" @click="next">
               <svg fill="currentColor" viewBox="0 0 24 24" width="22" height="22">
                 <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
               </svg>
             </button>
           </div>
-
           <div class="vol-control">
             <svg
               width="18"
@@ -133,12 +131,14 @@
         </div>
       </div>
 
+      <!-- ================= 右侧：歌词区 ================= -->
       <div
         class="right-column"
         ref="scrollRef"
-        @scroll="handleUserScroll"
-        @wheel="handleUserScroll"
-        @touchstart="handleUserScroll"
+        @wheel="handleWheel"
+        @touchstart="handleTouchStart"
+        @touchmove="handleTouchMove"
+        @touchend="handleTouchEnd"
       >
         <div class="lyric-spacer-top"></div>
 
@@ -149,11 +149,44 @@
           :class="{
             active: activeIndex === index,
             nearby: Math.abs(activeIndex - index) === 1,
+            'is-yrc': line.words && line.words.length > 0,
+            'is-interlude': line.isInterlude, // 标记间奏行
           }"
-          @click="seekTo(line.time)"
+          :style="{
+            '--scroll-y': `-${containerOffset + manualOffset}px`,
+            '--delay': isUserScrolling ? '0s' : getDelay(index),
+          }"
+          @click="line.isInterlude ? null : seekTo(line.time)"
         >
-          <div class="lyric-origin">{{ line.text }}</div>
-          <div v-if="line.translation" class="lyric-trans">{{ line.translation }}</div>
+          <div v-if="line.isInterlude" class="interlude-dots">
+            <span v-for="n in 3" :key="n" :style="getInterludeDotStyle(line, n)"></span>
+          </div>
+
+          <template v-else>
+            <div class="lyric-origin">
+              <template v-if="line.words && line.words.length > 0">
+                <span
+                  v-for="(word, wIndex) in line.words"
+                  :key="wIndex"
+                  class="lyric-word"
+                  :class="{
+                    'long-note': word.duration > 0.7, // 长音标记
+                    'word-active': isWordActive(word), // 当前字激活标记
+                  }"
+                  :style="getWordStyle(word, index === activeIndex)"
+                >
+                  {{ word.text }}
+                </span>
+              </template>
+              <template v-else>
+                {{ line.text }}
+              </template>
+            </div>
+
+            <div v-if="line.translation" class="lyric-trans">{{ line.translation }}</div>
+            <!-- 罗马音 -->
+            <div v-if="line.romaji" class="lyric-romaji">{{ line.romaji }}</div>
+          </template>
         </div>
 
         <div v-if="lyricLines.length === 0" class="no-lyric-tip">
@@ -167,7 +200,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick, toRaw } from 'vue'
+import { ref, computed, watch, onMounted, nextTick, onUnmounted } from 'vue'
 import { Player } from '@/stores/index'
 import { pagecontrol } from '@/stores/page'
 import { useRouter } from 'vue-router'
@@ -175,97 +208,131 @@ import { GetPersonalFM } from '@/api/GetMusicList'
 
 const router = useRouter()
 const player = Player()
-const pageCtrl = pagecontrol()
+const pagecontroler = pagecontrol()
 
-// ==================== 基础数据 ====================
 const coverUrl = computed(() => player.currentSongDetail?.cover || '')
 const currentTime = ref(0)
 const duration = ref(0)
+const volume = ref(player.audiovolume ?? 1)
 const seekValue = ref(0)
 const isSeeking = ref(false)
-const seeking = ref(false)
-const volume = ref(player.audiovolume ?? 1)
-const prevVolume = ref(volume.value)
-// ==================== 1. 核心修复：音频事件与状态同步 ====================
 
-// 标记事件是否已绑定，防止重复绑定
+const startSeek = () => {
+  isSeeking.value = true
+}
+const endSeek = () => {
+  setTimeout(() => {
+    isSeeking.value = false
+  }, 100)
+}
+const onSliderInput = (e: Event) => {
+  seekValue.value = parseFloat((e.target as HTMLInputElement).value)
+}
+const onSliderChange = (e: Event) => {
+  const val = parseFloat((e.target as HTMLInputElement).value)
+  seekValue.value = val
+  if (player.audio) {
+    player.audio.currentTime = val
+    currentTime.value = val
+    player.currentSongTime = val
+  }
+}
+
 let isEventBound = false
+let rafId = 0
+
+const updateTimeHighFreq = () => {
+  if (player.audio && !player.audio.paused && !isSeeking.value) {
+    currentTime.value = player.audio.currentTime
+    seekValue.value = currentTime.value
+    player.currentSongTime = currentTime.value
+  }
+  rafId = requestAnimationFrame(updateTimeHighFreq)
+}
 
 const bindAudioEvents = () => {
   const audio = player.audio
   if (!audio || isEventBound) return
 
   audio.addEventListener('timeupdate', () => {
-    if (!seeking.value) {
-      currentTime.value = audio.currentTime || 0
+    if (!isSeeking.value && audio.paused) {
+      currentTime.value = audio.currentTime
       seekValue.value = currentTime.value
-      player.currentSongTime = currentTime.value
     }
+  })
+
+  audio.addEventListener('play', () => {
+    cancelAnimationFrame(rafId)
+    updateTimeHighFreq()
+  })
+
+  audio.addEventListener('pause', () => {
+    cancelAnimationFrame(rafId)
   })
 
   audio.addEventListener('durationchange', () => {
     duration.value = audio.duration || 0
   })
-
-  audio.addEventListener('error', (e) => {
-    console.error('audio error', e, audio.src)
-  })
-  
   audio.volume = volume.value
   isEventBound = true
-}
 
+  // 如果已经在播放，立即启动 RAF
+  if (!audio.paused) {
+    updateTimeHighFreq()
+  }
+}
 onMounted(() => {
+  //calculateScrollPosition()
   if (player.audio) {
-    if(player.audio.paused){
-      player.isplaying = false
-    }
     bindAudioEvents()
     duration.value = player.audio.duration || player.currentSongDetail.duration || 0
     currentTime.value = player.audio.currentTime || player.currentSongTime || 0
     seekValue.value = currentTime.value
   }
+  window.addEventListener('resize', calculateScrollPosition)
+})
+
+onUnmounted(() => {
+  cancelAnimationFrame(rafId)
 })
 
 watch(
   () => player.audio,
   (newAudio) => {
     if (newAudio) {
-      isEventBound = false 
+      isEventBound = false
       bindAudioEvents()
       duration.value = newAudio.duration || 0
       currentTime.value = player.currentSongTime || 0
-      newAudio.currentTime = currentTime.value
     }
   },
-  { immediate: true }
+  { immediate: true },
 )
-
-watch(() => player.currentSongDetail, (newVal) => {
-  if (newVal) {
-    nextTick(() => {
-        const audio = player.audio
-        if(audio) {
-            duration.value = audio.duration || newVal.duration || 0
-        }
-    })
-  }
-})
 
 watch(volume, (v) => {
   player.audiovolume = v
   if (player.audio) player.audio.volume = player.audiovolume
 })
 
-// ==================== 2. 双语歌词解析 (保持逻辑不变) ====================
+// ==================== 歌词解析 ====================
+interface LyricWord {
+  text: string
+  time: number
+  duration: number
+}
 interface LyricLine {
   time: number
+  duration?: number // 整行持续时间
   text: string
   translation?: string
+  romaji?: string
+  words?: LyricWord[]
+  isInterlude?: boolean // 标记是否为间奏
+  endTime?: number // 辅助字段
 }
 
-const parseLrcStr = (lrc) => {
-  const lines: { time: number; text: string }[] = []
+const parseLrcStr = (lrc: string): LyricLine[] => {
+  const lines: LyricLine[] = []
   const regex = /\[(\d{2}):(\d{2})(\.\d{2,3})?\]/
   if (!lrc) return []
   for (const line of lrc.split('\n')) {
@@ -274,68 +341,269 @@ const parseLrcStr = (lrc) => {
       const min = parseInt(match[1])
       const sec = parseInt(match[2])
       const ms = match[3] ? parseFloat(match[3]) * 1000 : 0
-      lines.push({
-        time: min * 60 + sec + ms / 1000,
-        text: line.replace(regex, '').trim(),
-      })
+      lines.push({ time: min * 60 + sec + ms / 1000, text: line.replace(regex, '').trim() })
     }
   }
   return lines.filter((l) => l.text)
 }
 
+const parseYrcStr = (yrc: string): LyricLine[] => {
+  const lines: LyricLine[] = []
+  if (!yrc) return []
+  const rawLines = yrc.split('\n')
+  const lineInfoRegex = /^\[(\d+),(\d+)\](.*)/
+  const wordRegex = /\((\d+),(\d+),(\d+)\)([^\(]+)/g
+
+  for (const rawLine of rawLines) {
+    const lineMatch = lineInfoRegex.exec(rawLine)
+    if (lineMatch) {
+      const lineStartTime = parseInt(lineMatch[1]) / 1000
+      const lineDuration = parseInt(lineMatch[2]) / 1000 // 获取整行持续时间
+      const content = lineMatch[3]
+      const words: LyricWord[] = []
+      let match
+      while ((match = wordRegex.exec(content)) !== null) {
+        words.push({
+          time: parseInt(match[1]) / 1000,
+          duration: parseInt(match[2]) / 1000,
+          text: match[4],
+        })
+      }
+      if (words.length > 0) {
+        const fullText = words.map((w) => w.text).join('')
+        lines.push({
+          time: lineStartTime,
+          duration: lineDuration,
+          endTime: lineStartTime + lineDuration,
+          text: fullText,
+          words: words,
+        })
+      }
+    }
+  }
+  return lines.sort((a, b) => a.time - b.time)
+}
+
 const lyricLines = computed<LyricLine[]>(() => {
-  const rawLyric = player.currentSongLyric
-  if (!rawLyric) return []
+  const yrcRaw = player.currentSongYrc
+  const transRaw = yrcRaw ? player.currentSongTYrc : player.currentSongTLyric
+  const romaYrcRaw = player.currentSongRoMaYrc
+  const normalLrcRaw = player.currentSongLyric
 
-  const origins = parseLrcStr(rawLyric)
-  const rawTrans = player.currentSongTLyric || null
-  const translations = rawTrans ? parseLrcStr(rawTrans) : []
-  const transMap = new Map(translations.map((t) => [t.time.toFixed(1), t.text]))
+  let mainLines: LyricLine[] = []
+  if (yrcRaw) mainLines = parseYrcStr(yrcRaw)
+  else if (normalLrcRaw) mainLines = parseLrcStr(normalLrcRaw)
 
-  return origins.map((line) => {
+  // 处理翻译和罗马音
+  let transLines = transRaw
+    ? /\(\d+,\d+,\d+\)/.test(transRaw)
+      ? parseYrcStr(transRaw)
+      : parseLrcStr(transRaw)
+    : []
+  let romaLines = romaYrcRaw
+    ? /\(\d+,\d+,\d+\)/.test(romaYrcRaw)
+      ? parseYrcStr(romaYrcRaw)
+      : parseLrcStr(romaYrcRaw)
+    : []
+
+  const transMap = new Map()
+  transLines.forEach((l) => transMap.set(l.time.toFixed(1), l.text))
+  const romaMap = new Map()
+  romaLines.forEach((l) => romaMap.set(l.time.toFixed(1), l.text))
+
+  // 合并数据
+  const combinedLines = mainLines.map((line) => {
     const key = line.time.toFixed(1)
+    let transText = transMap.get(key)
+    let romaText = romaMap.get(key)
+    // 模糊匹配容错
+    if (!transText)
+      transText =
+        transMap.get((line.time + 0.1).toFixed(1)) || transMap.get((line.time - 0.1).toFixed(1))
+    if (!romaText)
+      romaText =
+        romaMap.get((line.time + 0.1).toFixed(1)) || romaMap.get((line.time - 0.1).toFixed(1))
+
     return {
       ...line,
-      translation: transMap.get(key) || '',
+      translation: transText || '',
+      romaji: romaText || '',
     }
   })
+
+  // === 插入间奏逻辑 ===
+  const finalLines: LyricLine[] = []
+
+  // 判断前奏：如果第一句开始时间大于 5 秒
+  if (combinedLines.length > 0) {
+    const firstLine = combinedLines[0]
+    if (firstLine.time > 5) {
+      finalLines.push({
+        time: 0,
+        duration: firstLine.time, // 前奏持续时间
+        text: '...',
+        isInterlude: true,
+        words: [],
+      })
+    }
+  }
+
+  // 2. 插入间奏
+  for (let i = 0; i < combinedLines.length; i++) {
+    const current = combinedLines[i]
+    finalLines.push(current)
+
+    if (i < combinedLines.length - 1) {
+      const next = combinedLines[i + 1]
+      if (current.endTime) {
+        const gap = next.time - current.endTime
+        if (gap > 5) {
+          // 间奏阈值 5秒
+          finalLines.push({
+            time: current.endTime,
+            duration: gap,
+            text: '...',
+            isInterlude: true,
+            words: [],
+          })
+        }
+      }
+    }
+  }
+
+  return finalLines
 })
 
-// ==================== 3. 滚动与定位逻辑 ====================
+const getWordStyle = (word: LyricWord, isLineActive: boolean) => {
+  if (!isLineActive) return { '--word-progress': '0%' }
+
+  const now = currentTime.value
+  const start = word.time
+  const end = word.time + word.duration
+
+  let percent = 0
+  if (now >= end) percent = 100
+  else if (now > start) percent = ((now - start) / word.duration) * 100
+
+  percent = Math.max(0, Math.min(100, percent))
+
+  return { '--word-progress': `${percent}%` }
+}
+
+/**
+ * 判断单词是否处于激活状态（用于上浮动效）
+ */
+const isWordActive = (word: LyricWord) => {
+  const now = currentTime.value
+  return now >= word.time && now < word.time + word.duration
+}
+
+const getInterludeDotStyle = (line: LyricLine, dotIndex: number) => {
+  const now = currentTime.value
+  const start = line.time
+  const duration = line.duration || 1
+  const progress = Math.max(0, Math.min(1, (now - start) / duration)) // 0~1
+
+  const segment = 1 / 3
+  const startThreshold = (dotIndex - 1) * segment
+
+  // 计算当前点在自己区间的进度
+  let dotOpacity = 0.2 // 默认底色
+  if (progress > startThreshold) {
+    // (当前总进度 - 本段起点) / 本段长度 = 本段内的完成度 (0~1)
+    const localProgress = (progress - startThreshold) / segment
+    const clampedProgress = Math.min(1, localProgress)
+    // 0.2 到 1 的插值
+    dotOpacity = 0.2 + 0.8 * clampedProgress
+  }
+
+  return {
+    opacity: dotOpacity,
+    transform: `scale(${0.8 + (0.4 * (dotOpacity - 0.2)) / 0.8})`, // 根据不透明度同步缩放
+  }
+}
+
+// ... 滚动逻辑 ...
 const scrollRef = ref<HTMLElement | null>(null)
 const activeIndex = ref(0)
+const containerOffset = ref(0)
+const manualOffset = ref(0)
 const isUserScrolling = ref(false)
-let scrollTimeout: any = null
+let scrollTimer: any = null
 
-// 监听歌词变化重置
-watch(lyricLines, async (newLyrics) => {
-  if (newLyrics.length > 0) {
-    activeIndex.value = 0
-    await nextTick()
-    scrollToTop('auto')
-    setTimeout(() => scrollToActive('smooth'), 100)
+const getDelay = (index: number) => {
+  const diff = index - activeIndex.value
+  if (diff < 0) return '0s'
+  if (diff === 0) return '0.05s'
+  const delay = 0.1 + diff * 0.08
+  return `${Math.min(delay, 0.6)}s`
+}
+
+function calculateScrollPosition() {
+  if (!scrollRef.value) return
+  const container = scrollRef.value
+  const children = container.querySelectorAll('.lyric-line')
+  const activeEl = children[activeIndex.value] as HTMLElement
+  if (activeEl) {
+    const containerHeight = container.clientHeight
+    const activeTop = activeEl.offsetTop
+    containerOffset.value = activeTop - containerHeight * 0.38
   }
-})
+}
 
-// 监听时间更新歌词位置
+function activateManualScroll() {
+  isUserScrolling.value = true
+  if (scrollTimer) clearTimeout(scrollTimer)
+  scrollTimer = setTimeout(() => {
+    isUserScrolling.value = false
+    manualOffset.value = 0
+  }, 2500)
+}
+const handleWheel = (e: WheelEvent) => {
+  activateManualScroll()
+  manualOffset.value += e.deltaY
+}
+let startY = 0,
+  lastManualOffset = 0
+const handleTouchStart = (e: TouchEvent) => {
+  activateManualScroll()
+  startY = e.touches[0].clientY
+  lastManualOffset = manualOffset.value
+}
+const handleTouchMove = (e: TouchEvent) => {
+  e.preventDefault()
+  activateManualScroll()
+  const currentY = e.touches[0].clientY
+  manualOffset.value = lastManualOffset + (startY - currentY)
+}
+const handleTouchEnd = () => {
+  activateManualScroll()
+}
+
 watch(
   () => currentTime.value,
   (newTime) => {
     updateActiveIndex(newTime)
   },
 )
+watch([activeIndex, isUserScrolling], () => {
+  if (!isUserScrolling.value) {
+    nextTick(() => {
+      calculateScrollPosition()
+      manualOffset.value = 0
+    })
+  }
+})
 
 function updateActiveIndex(time: number) {
   if (lyricLines.value.length === 0) return
-  let left = 0
-  let right = lyricLines.value.length - 1
-  let targetIndex = 0
-
+  let left = 0,
+    right = lyricLines.value.length - 1,
+    targetIndex = 0
   while (left <= right) {
     const mid = Math.floor((left + right) / 2)
     const line = lyricLines.value[mid]
     const nextLine = lyricLines.value[mid + 1]
-
     if (time >= line.time && (!nextLine || time < nextLine.time)) {
       targetIndex = mid
       break
@@ -345,41 +613,30 @@ function updateActiveIndex(time: number) {
       left = mid + 1
     }
   }
-
-  if (targetIndex !== activeIndex.value) {
-    activeIndex.value = targetIndex
-    scrollToActive('smooth')
-  }
+  if (targetIndex !== activeIndex.value) activeIndex.value = targetIndex
 }
 
-const scrollToTop = (behavior: ScrollBehavior = 'auto') => {
-  if (scrollRef.value) scrollRef.value.scrollTo({ top: 0, behavior })
-}
+watch(
+  () => pagecontroler.ShowLyric,
+  async (isShow) => {
+    if (isShow) {
+      await nextTick()
+      calculateScrollPosition()
+    }
+  },
+)
+watch(lyricLines, async () => {
+  activeIndex.value = 0
+  containerOffset.value = 0
+  manualOffset.value = 0
+  await nextTick()
+  calculateScrollPosition()
+})
 
-function scrollToActive(behavior: ScrollBehavior = 'smooth') {
-  if (isUserScrolling.value || !scrollRef.value) return
-  const container = scrollRef.value
-  const activeEl = container.children[activeIndex.value + 1] as HTMLElement
-  if (activeEl) {
-    const containerHeight = container.clientHeight
-    const offset = activeEl.offsetTop - containerHeight * 0.38
-    container.scrollTo({ top: offset, behavior })
-  }
-}
-
-function handleUserScroll() {
-  isUserScrolling.value = true
-  if (scrollTimeout) clearTimeout(scrollTimeout)
-  scrollTimeout = setTimeout(() => {
-    isUserScrolling.value = false
-  }, 1200)
-}
-
-// ==================== 4. 交互控制 ====================
+// ... 交互函数保持不变 ...
 function togglePlay() {
   player.togglePlay()
 }
-
 const next = async () => {
   if (player.playFM) {
     const mappedFmSongs = ref()
@@ -411,51 +668,38 @@ const next = async () => {
   }
   player.playNextSong && player.playNextSong()
 }
-
 function prev() {
   player.playPrevSong ? player.playPrevSong() : player.playNextSong()
 }
-
-function onSeek() {
-  if (!player.audio) return
-  player.audio.currentTime = seekValue.value
-  currentTime.value = seekValue.value
-  player.currentSongTime = seekValue.value
-}
-
 function seekTo(time: number) {
   if (player.audio) {
     player.audio.currentTime = time
     currentTime.value = time
-    isUserScrolling.value = false // 点击歌词跳转时，强制接管滚动
-    nextTick(() => scrollToActive('smooth'))
+    isUserScrolling.value = false
+    manualOffset.value = 0
+    nextTick(calculateScrollPosition)
   }
 }
-
 function handleClose() {
-  pageCtrl.isShowLyric()
+  pagecontroler.isShowLyric()
 }
-
 function formatTime(s: number) {
   s = Math.floor(s) || 0
   const m = Math.floor(s / 60)
   const sec = (s % 60).toString().padStart(2, '0')
   return `${m}:${sec}`
 }
-
 function onVolume() {
   if (player.audio) player.audio.volume = volume.value
-  if (volume.value > 0) prevVolume.value = volume.value
 }
-
 const TurnIn = (artistid: number) => {
-  pageCtrl.ShowLyric = false
+  pagecontroler.ShowLyric = false
   router.push({ name: 'artist', params: { id: artistid } })
 }
 </script>
 
 <style scoped lang="scss">
-/* ================= 全局容器 ================= */
+/* 全局样式不变 */
 .player-page {
   position: fixed;
   top: 0;
@@ -463,20 +707,17 @@ const TurnIn = (artistid: number) => {
   right: 0;
   bottom: 0;
   z-index: 2000;
-  background: #000; /* 纯黑底色 */
+  background: #000;
   color: #fff;
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
   user-select: none;
   overflow: hidden;
 }
-
-/* 背景层：重度模糊 */
 .bg-layer {
   position: absolute;
   inset: -60px;
   background-size: cover;
   background-position: center;
-  /* 关键：高模糊、高饱和、低亮度 */
   filter: blur(100px) saturate(220%) brightness(0.4);
   z-index: 1;
   opacity: 0.8;
@@ -489,7 +730,6 @@ const TurnIn = (artistid: number) => {
   background: linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.5));
   z-index: 2;
 }
-
 .close-btn {
   position: absolute;
   top: 30px;
@@ -501,32 +741,26 @@ const TurnIn = (artistid: number) => {
   width: 44px;
   height: 44px;
   color: rgba(255, 255, 255, 0.6);
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
   backdrop-filter: blur(10px);
+  cursor: pointer;
 }
 .close-btn:hover {
   background: rgba(255, 255, 255, 0.2);
   color: #fff;
 }
-
-/* ================= 布局 Grid ================= */
 .content-layout {
   position: relative;
   z-index: 5;
   width: 100%;
   height: 100%;
   display: grid;
-  /* 调整比例：左侧稍微窄一点，给歌词更多空间 */
   grid-template-columns: 42% 58%;
   padding: 0 4%;
   box-sizing: border-box;
 }
-
-/* ================= 左侧：控制区 ================= */
 .left-column {
   display: flex;
   flex-direction: column;
@@ -537,23 +771,20 @@ const TurnIn = (artistid: number) => {
   justify-self: end;
   height: 100vh;
 }
-
 .cover-wrapper {
   width: 100%;
   aspect-ratio: 1/1;
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5); /* 更有深度的阴影 */
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
   margin-bottom: 40px;
   background: #222;
-  transition: transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 .album-cover {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-
 .track-info {
   display: flex;
   justify-content: space-between;
@@ -577,14 +808,17 @@ const TurnIn = (artistid: number) => {
   margin: 0;
   font-weight: 500;
 }
-.artist-name span {
-  cursor: pointer;
-  transition: color 0.2s;
+.controls-row {
+  justify-content: center;
+  align-items: center;
 }
-.artist-name span:hover {
-  color: #fff;
+.main-controls {
+  display: flex;
+  justify-self: center;
+  align-items: center;
+  gap: 48px;
+  padding: 20px;
 }
-
 .like-btn,
 .icon-btn {
   background: transparent;
@@ -594,17 +828,14 @@ const TurnIn = (artistid: number) => {
   padding: 0;
   transition: all 0.3s;
 }
-.like-btn:hover,
-.icon-btn:hover {
-  color: #fff;
-  transform: scale(1.1);
+.vol-control {
+  display: flex;
+  align-items: center;
+  justify-self: center;
+  gap: 10px;
+  width: 80%;
+  opacity: 0.8;
 }
-.like-btn:active,
-.icon-btn:active {
-  transform: scale(0.95);
-}
-
-/* 进度条 */
 .progress-bar-wrap {
   display: flex;
   align-items: center;
@@ -619,13 +850,9 @@ const TurnIn = (artistid: number) => {
 }
 .slider {
   -webkit-appearance: none;
-  appearance: none;
   height: 4px;
   border-radius: 2px;
   background: rgba(255, 255, 255, 0.1);
-  outline: none;
-  cursor: pointer;
-  position: relative;
   flex: 1;
   background: linear-gradient(
     to right,
@@ -634,58 +861,31 @@ const TurnIn = (artistid: number) => {
     rgba(255, 255, 255, 0.1) var(--progress),
     rgba(255, 255, 255, 0.1) 100%
   );
+  cursor: pointer;
+  position: relative;
 }
 .slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 0px;
-  height: 0px;
+  width: 0;
+  height: 0;
   border-radius: 50%;
   background: #fff;
-  cursor: pointer;
-  opacity: 0;
-  transition:
-    opacity 0.2s,
-    transform 0.2s;
+  transition: all 0.2s;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 .slider:hover::-webkit-slider-thumb {
   opacity: 1;
   transform: scale(1.2);
+  width: 12px;
+  height: 12px;
 }
 
-.controls-row {
-  justify-content: center;
-  align-items: center;
-}
-.main-controls {
-  display: flex;
-  justify-self: center;
-  align-items: center;
-  gap: 48px;
-  padding: 20px;
-}
-.main-controls .lg {
-  color: #fff;
-}
-.vol-control {
-  display: flex;
-  align-items: center;
-  justify-self: center;
-  gap: 10px;
-  width: 80%;
-  opacity: 0.8;
-  transition: opacity 0.2s;
-}
-.vol-control:hover {
-  opacity: 1;
-}
-
-/* ================= 右侧：歌词 (重构重点) ================= */
+/* 歌词区 */
 .right-column {
   height: 100vh;
-  overflow-y: auto;
-  scrollbar-width: none;
-  /* 遮罩：让顶部和底部的歌词柔和消失 */
+  overflow: hidden;
+  position: relative;
+  align-items: flex-start;
   mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
   -webkit-mask-image: linear-gradient(
     to bottom,
@@ -696,21 +896,12 @@ const TurnIn = (artistid: number) => {
   );
   display: flex;
   flex-direction: column;
-  align-items: flex-start; /* 左对齐 */
+  align-items: flex-start;
   padding-left: 50px;
   padding-right: 60px;
   box-sizing: border-box;
-  cursor: grab;
-  scroll-behavior: smooth; /* CSS 平滑滚动 */
+  touch-action: none;
 }
-.right-column:active {
-  cursor: grabbing;
-}
-.right-column::-webkit-scrollbar {
-  display: none;
-}
-
-/* 占位符：调整这些高度来改变第一句和最后一句歌词的位置 */
 .lyric-spacer-top {
   height: 45vh;
   flex-shrink: 0;
@@ -723,63 +914,131 @@ const TurnIn = (artistid: number) => {
 .lyric-line {
   margin-bottom: 26px;
   cursor: pointer;
-  /* 核心动画：弹簧曲线 (Spring Bezier) */
+  will-change: transform, opacity, filter;
+  transform: translateY(var(--scroll-y)) scale(1) translate3d(0, 0, 0);
   transition:
-    color 1.5s,
-    transform 1.5s cubic-bezier(0.34, 1.56, 0.64, 1),
-    filter 1.5s,
-    opacity 1.5s;
-  transform-origin: left center;
-  will-change: transform, filter, opacity; /* 性能优化 */
-
+    transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1),
+    filter 0.7s ease,
+    opacity 0.7s ease,
+    color 0.7s ease;
+  transition-delay: var(--delay), 0s, 0s, 0s;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-
-  /* --- 默认状态 (未激活) --- */
-  color: rgba(255, 255, 255, 0.4); /* 变暗 */
-  transform: scale(0.9) translateX(-15px); /* 缩小并左移 */
-  filter: blur(2px); /* 深度模糊 */
-  opacity: 0.6;
+  gap: 4px;
+  color: rgba(255, 255, 255, 0.45);
+  filter: blur(2px);
+  opacity: 0.5;
 }
-
 .lyric-line:hover {
   filter: blur(0px) !important;
   opacity: 1 !important;
   color: rgba(255, 255, 255, 0.8);
 }
-
-/* --- 临近状态 (Active 上下一行) --- */
-.lyric-line.nearby {
-  filter: blur(1px);
-  opacity: 0.8;
-  transform: scale(0.95) translateX(-8px);
-}
-
-/* --- 激活状态 (Active) --- */
 .lyric-line.active {
   color: #fff;
-  /* 放大并归位 */
-  transform: scale(1.05) translateX(0);
   filter: blur(0);
   opacity: 1;
-  margin-bottom: 34px; /* 增加激活行的间距 */
+  margin-bottom: 34px;
+  text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+  transform: translateY(var(--scroll-y)) scale(1) translate3d(0, 0, 0);
+}
+.lyric-line.active:not(.is-yrc) {
+  color: #fff;
+}
+.lyric-line.active.is-yrc {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
 
-  /* 柔和发光效果 */
-  text-shadow: 0 0 24px rgba(255, 255, 255, 0.4);
+.lyric-line.nearby {
+  filter: blur(2px);
+  opacity: 0.8;
+  transform: translateY(var(--scroll-y)) scale(1) translate3d(0, 0, 0);
+}
+
+/* 翻译与罗马音 */
+.lyric-trans {
+  font-size: 30px;
+  font-weight: 800;
+  opacity: 0.7;
+  line-height: 1.4;
+  margin-top: 4px;
+}
+.lyric-romaji {
+  font-size: 20px;
+  font-weight: 500;
+  opacity: 0.5;
+  font-family: 'SF Pro Rounded', system-ui;
+  margin-top: 2px;
+}
+.active .lyric-trans {
+  color: rgba(255, 255, 255, 0.9);
+}
+.active .lyric-romaji {
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .lyric-origin {
   font-size: 42px;
-  font-weight: 1000; /* 加粗 */
+  font-weight: 1000;
   line-height: 1.25;
   letter-spacing: -0.5px;
+}
+.active .lyric-origin {
+  font-size: 50px;
 }
 .lyric-trans {
   font-size: 30px;
   font-weight: 800;
   opacity: 0.7;
   line-height: 1.4;
+  margin-top: 4px;
+}
+
+/* 逐字歌词动效优化 */
+.lyric-word {
+  display: inline-block;
+  white-space: pre-wrap;
+  background-clip: text;
+  -webkit-background-clip: text;
+  font-size: 42px;
+  font-weight: 1000;
+  color: rgba(255, 255, 255, 0.45);
+  background-image: linear-gradient(to right, #fff 0%, #fff 100%);
+  background-repeat: no-repeat;
+  background-size: var(--word-progress) 100%;
+}
+.lyric-line.active .lyric-word {
+  color: rgba(255, 255, 255, 0.45);
+  -webkit-text-fill-color: transparent;
+  /* 更柔和的渐变 */
+  background-image: linear-gradient(to right, #ffffff 50%, rgba(255, 255, 255, 0.45) 50%);
+  background-size: 200% 100%;
+  background-position: calc(100% - var(--word-progress)) 0;
+  /* 关键：0.1s linear 过渡确保在 RAF 帧之间平滑补间，消除抖动 */
+  transition: background-position 0.1s linear;
+}
+.lyric-line:not(.is-yrc) .lyric-origin,
+.lyric-line:not(.active) .lyric-word {
+  background: none;
+  -webkit-text-fill-color: initial;
+  color: inherit;
+}
+
+/* 间奏圆点 */
+.interlude-dots {
+  display: flex;
+  gap: 12px;
+  height: 60px;
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: 10px;
+}
+.interlude-dots span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #fff;
+  transition: all 0.3s ease;
 }
 
 .no-lyric-tip {
@@ -788,18 +1047,14 @@ const TurnIn = (artistid: number) => {
   align-items: center;
   font-size: 42px;
   color: rgba(255, 255, 255, 0.4);
-  letter-spacing: 2px;
 }
 
-/* ================= 移动端适配 ================= */
 @media (max-width: 900px) {
   .content-layout {
     grid-template-columns: 1fr;
-    padding: 24px;
     display: block;
-    overflow-y: auto; /* 允许页面整体滚动 */
+    overflow-y: auto;
   }
-
   .left-column {
     height: auto;
     padding-right: 0;
@@ -807,60 +1062,49 @@ const TurnIn = (artistid: number) => {
     margin: 50px auto 30px;
     justify-self: center;
   }
-  .cover-wrapper {
-    margin-bottom: 24px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-  }
-  .song-title {
-    font-size: 24px;
-    text-align: center;
-  }
-  .artist-name {
-    text-align: center;
-  }
-  .track-info {
-    display: block;
-    text-align: center;
-  }
-  .track-actions {
-    display: none; /* 移动端简化，隐藏点赞 */
-  }
-
-  /* 移动端歌词样式调整 */
   .right-column {
-    height: auto; /* 不定高 */
+    height: auto;
     overflow: visible;
     padding-left: 0;
-    align-items: center; /* 居中 */
+    align-items: center;
     mask-image: none;
-    -webkit-mask-image: none;
     padding-bottom: 150px;
+    touch-action: auto;
   }
   .lyric-spacer-top,
   .lyric-spacer-bottom {
     display: none;
   }
-
   .lyric-line {
+    transform: none !important;
+    transition: all 0.3s ease !important;
+    transition-delay: 0s !important;
     align-items: center;
     text-align: center;
-    transform-origin: center; /* 中心缩放 */
     margin-bottom: 20px;
-
-    /* 移动端减弱模糊，为了性能 */
     filter: blur(1px);
-    transform: scale(0.95);
   }
   .lyric-line.active {
-    transform: scale(1.05);
+    transform: scale(1.05) !important;
     filter: blur(0);
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  }
+  .active .lyric-origin {
+    font-size: 28px;
   }
   .lyric-origin {
     font-size: 24px;
   }
   .lyric-trans {
     font-size: 16px;
+  }
+  .lyric-romaji {
+    font-size: 14px;
+  }
+  .lyric-word {
+    font-size: 24px;
+  }
+  .interlude-dots {
+    justify-content: center;
   }
 }
 </style>

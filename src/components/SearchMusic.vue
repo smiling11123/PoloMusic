@@ -40,24 +40,11 @@ import { useRouter } from 'vue-router'
 import { GetSearchData } from '@/api/Search'
 import { search } from '@/stores/search'
 import { GetMusicDetail } from '@/api/GetMusic'
+import type { SongItem } from '@/stores/index'
 
-interface Artist {
-  id: number
-  name: string
-}
-
-interface SongItem {
-  id: number
-  name: string
-  alias?: string // 歌曲别名（如：抖音DJ版）
-  artists: Artist[]
-  album: string
-  cover: string
-  duration?: number
-}
 // --- 状态与逻辑 ---
 const router = useRouter()
-const store = Player()
+const player = Player()
 const songsList = ref<SongItem[]>([])
 const searcher = search()
 
@@ -125,10 +112,11 @@ onUnmounted(() => {
 
 // --- 播放与交互逻辑保持不变 ---
 const playSong = (song: SongItem) => {
-  store.playFM = false
-  store.playnormal = true
-  store.playcurrentSong({ firstId: song.id })
-  store.addSongToPlaylist(song.id, store.currentSongIndex + 1)
+  player.playFM = false
+  player.playnormal = true
+  player.nextSongUrl = null
+  player.playcurrentSong({ firstId: song.id })
+  player.addSongToPlaylist(song.id, player.currentSongIndex + 1)
 }
 
 const goToAllSongs = () => {

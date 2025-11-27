@@ -8,9 +8,9 @@
   <main class="mainpage">
     <n-split
       direction="horizontal"
-      :default-size="0.2"
-      :max="0.33"
-      :min="0.15"
+      :default-size="0.3"
+      :max="0.4"
+      :min="0.09"
       v-model:size="leftPaneSize"
       :resize-trigger-size="pagecontroler.IsFold ? 0 : 2"
       @update:size="onPaneResize"

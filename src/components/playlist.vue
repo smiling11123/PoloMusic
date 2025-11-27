@@ -1,5 +1,5 @@
 <template>
-  <div class="Show-PlayList" v-if="store.playlist.length">
+  <div class="Show-PlayList" v-if="player.playlist.length">
     <div class="song-list-wrapper">
       <ul class="song-list">
         <li
@@ -57,25 +57,11 @@
 import { Player } from '@/stores/index'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-// 移除了 Naive UI 组件的引入
-interface Artist {
-  id: number
-  name: string
-}
-
-interface SongItem {
-  id: number
-  name: string
-  alias?: string // 歌曲别名（如：抖音DJ版）
-  artists: Artist[]
-  album: string
-  cover: string
-  duration?: number
-}
+import type { SongItem } from '@/stores/index'
 
 const playerStore = Player()
 const router = useRouter()
-const store = Player()
+const player = Player()
 const currentSongId = computed(() => playerStore.currentSong)
 const songs = computed(() => playerStore.currentSongList)
 
@@ -94,6 +80,7 @@ function formatTime(seconds: number): string {
 
 function playSong(song: SongItem, index: number) {
   //playerStore.addWholePlaylist(songs.value.map((s) => s.id))
+  playerStore.nextSongUrl = null
   playerStore.playcurrentSong(song.id)
 }
 const TurnIn = (artistid) => {

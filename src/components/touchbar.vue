@@ -1,8 +1,8 @@
 <template>
   <div class="touchbar" role="region" aria-label="player touchbar">
     <div class="left-area">
-      <div class="cover-container" v-if="store.currentSong">
-        <img :src="store.currentSongDetail.cover" alt="cover" class="cover-img" />
+      <div class="cover-container" v-if="player.currentSong">
+        <img :src="player.currentSongDetail.cover" alt="cover" class="cover-img" />
         <div class="lyric-btn-overlay" @click="ShowLyric()">
           <svg class="icon-lyric" viewBox="0 0 320 512" fill="currentColor">
             <path
@@ -17,17 +17,17 @@
         </div>
       </div>
       <div class="meta-info">
-        <div class="song-title" :title="store.currentSongDetail.name">
-          {{ store.currentSongDetail.name || 'PoloMusic' }}
+        <div class="song-title" :title="player.currentSongDetail.name">
+          {{ player.currentSongDetail.name || 'PoloMusic' }}
         </div>
         <div class="artist-name">
           <span
-            v-for="(artist, index) in store.currentSongDetail.artists"
+            v-for="(artist, index) in player.currentSongDetail.artists"
             :key="artist.id"
             @click="TurnIn(artist.id)"
           >
             {{ artist.name
-            }}<span v-if="index < store.currentSongDetail.artists.length - 1"> / </span>
+            }}<span v-if="index < player.currentSongDetail.artists.length - 1"> / </span>
           </span>
         </div>
       </div>
@@ -44,10 +44,10 @@
         <button
           class="ctrl-btn primary"
           @click="togglePlay"
-          :title="store.isplaying ? '暂停' : '播放'"
+          :title="player.isplaying ? '暂停' : '播放'"
         >
           <svg
-            v-if="store.isplaying"
+            v-if="player.isplaying"
             viewBox="0 0 24 24"
             fill="currentColor"
             width="24"
@@ -74,7 +74,7 @@
             class="slider progress-bar"
             type="range"
             min="0"
-            :max="Math.max(store.currentSongTime || 1, duration)"
+            :max="Math.max(player.currentSongTime || 1, duration)"
             step="0.1"
             v-model.number="seekValue"
             @change="onSeek"
@@ -82,7 +82,7 @@
             @pointerup="seeking = false"
             :style="{
               '--progress':
-                (seekValue / Math.max(store.currentSongTime || 1, duration)) * 100 + '%',
+                (seekValue / Math.max(player.currentSongTime || 1, duration)) * 100 + '%',
             }"
           />
         </div>
@@ -95,7 +95,7 @@
         title="单曲循环"
         class="onlyone"
         @click="Onlyoneplaymodel()"
-        :class="{ active: store.playmodel === 'onlyone' }"
+        :class="{ active: player.playmodel === 'onlyone' }"
       >
         <svg
           t="1763882308161"
@@ -129,7 +129,7 @@
         title="随机播放"
         class="random"
         @click="Randomplaymodel()"
-        :class="{ active: store.playmodel === 'random' }"
+        :class="{ active: player.playmodel === 'random' }"
       >
         <svg
           t="1763880396362"
@@ -178,7 +178,7 @@
           v-model.number="volume"
           @input="onVolume"
           class="slider volume-slider"
-          :style="{ '--progress': store.audio.volume * 100 + '%' }"
+          :style="{ '--progress': player.audio.volume * 100 + '%' }"
         />
       </div>
     </div>
@@ -193,27 +193,27 @@ import { GetPersonalFM } from '@/api/GetMusicList'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const store = Player()
+const player = Player()
 const pagecontroler = pagecontrol()
 const currentTime = ref(0)
 const duration = ref(0)
 const seekValue = ref(0)
 const seeking = ref(false)
-const volume = ref(store.audiovolume ?? 1) 
+const volume = ref(player.audiovolume ?? 1) 
 const prevVolume = ref(volume ?? 1)
 
 // 标记事件是否已绑定，防止重复绑定
 let isEventBound = false
 
 const bindAudioEvents = () => {
-  const audio = store.audio
+  const audio = player.audio
   if (!audio || isEventBound) return
 
   audio.addEventListener('timeupdate', () => {
     if (!seeking.value) {
       currentTime.value = audio.currentTime || 0
       seekValue.value = currentTime.value
-      store.currentSongTime = currentTime.value
+      player.currentSongTime = currentTime.value
     }
   })
 
@@ -230,36 +230,36 @@ const bindAudioEvents = () => {
 }
 
 onMounted(() => {
-  if (store.audio) {
-    if(store.audio.paused){
-      store.isplaying = false
+  if (player.audio) {
+    if(player.audio.paused){
+      player.isplaying = false
     }
     bindAudioEvents()
-    duration.value = store.audio.duration || store.currentSongDetail.duration || 0
-    currentTime.value = store.audio.currentTime || store.currentSongTime || 0
+    duration.value = player.audio.duration || player.currentSongDetail.duration || 0
+    currentTime.value = player.audio.currentTime || player.currentSongTime || 0
     seekValue.value = currentTime.value
   }
 })
 
 
 watch(
-  () => store.audio,
+  () => player.audio,
   (newAudio) => {
     if (newAudio) {
       isEventBound = false 
       bindAudioEvents()
       duration.value = newAudio.duration || 0
-      currentTime.value = store.currentSongTime || 0
+      currentTime.value = player.currentSongTime || 0
       newAudio.currentTime = currentTime.value
     }
   },
   { immediate: true }
 )
 
-watch(() => store.currentSongDetail, (newVal) => {
+watch(() => player.currentSongDetail, (newVal) => {
   if (newVal) {
     nextTick(() => {
-        const audio = store.audio
+        const audio = player.audio
         if(audio) {
             duration.value = audio.duration || newVal.duration || 0
         }
@@ -268,8 +268,8 @@ watch(() => store.currentSongDetail, (newVal) => {
 })
 
 watch(volume, (v) => {
-  store.audiovolume = v
-  if (store.audio) store.audio.volume = store.audiovolume
+  player.audiovolume = v
+  if (player.audio) player.audio.volume = player.audiovolume
 })
 
 function ShowLyric() {
@@ -287,16 +287,16 @@ function formatTime(s = 0) {
   return `${m}:${sec}`
 }
 function togglePlay() {
-  store.togglePlay()
+  player.togglePlay()
 }
 function onSeek() {
-  if (!store.audio) return
-  store.audio.currentTime = seekValue.value
+  if (!player.audio) return
+  player.audio.currentTime = seekValue.value
   currentTime.value = seekValue.value
-  store.currentSongTime = seekValue.value
+  player.currentSongTime = seekValue.value
 }
 function onVolume() {
-  if (store.audio) store.audio.volume = volume.value
+  if (player.audio) player.audio.volume = volume.value
   if (volume.value > 0) prevVolume.value = volume.value
 }
 function muteToggle() {
@@ -308,12 +308,12 @@ function muteToggle() {
   }
 }
 function prev() {
-  if (store.playlist?.length) store.playPrevSong ? store.playPrevSong() : store.playNextSong()
+  if (player.playlist?.length) player.playPrevSong ? player.playPrevSong() : player.playNextSong()
 }
 const next = async () => {
   const mappedFmSongs = ref()
-  if (store.playFM) {
-    if (store.currentSongIndex - store.playlist.length <= 3) {
+  if (player.playFM) {
+    if (player.currentSongIndex - player.playlist.length <= 3) {
       const fmRes = await GetPersonalFM()
       const fmList = fmRes.data
       mappedFmSongs.value = fmList.map((song: any) => ({
@@ -341,20 +341,20 @@ const next = async () => {
         console.error('No track ids returned from MusicIdList', idRes)
         return
       }
-      store.addSongsToPlaylist(ids)
+      player.addSongsToPlaylist(ids)
     }
   }
-  store.playNextSong()
+  player.playNextSong()
 }
 
 const TurnIn = (artistid) => {
   router.push({ name: 'artist', params: { id: artistid } })
 }
 const Randomplaymodel = () => {
-  store.randomplaymodel()
+  player.randomplaymodel()
 }
 const Onlyoneplaymodel = () => {
-  store.onlyoneplaymodel()
+  player.onlyoneplaymodel()
 }
 </script>
 
@@ -386,6 +386,7 @@ const Onlyoneplaymodel = () => {
 .left-area {
   display: flex;
   align-items: center;
+  padding-left: 10px;
   gap: 12px;
   overflow: hidden; /* 关键：防止子元素溢出撑破布局 */
 }

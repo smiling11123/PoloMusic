@@ -39,26 +39,11 @@ import { ref, onMounted } from 'vue'
 import { Player } from '@/stores/index' // 你的播放器 Store
 import { useRouter } from 'vue-router'
 import { GetRecommendNewMusic } from '@/api/GetMusicList' // 假设你有这个API封装
-
-// --- 数据接口定义 ---
-interface Artist {
-  id: number
-  name: string
-}
-
-interface SongItem {
-  id: number
-  name: string
-  alias?: string // 歌曲别名（如：抖音DJ版）
-  artists: Artist[]
-  album: string
-  cover: string
-  duration?: number
-}
+import type { SongItem } from '@/stores/index'
 
 // --- 状态与逻辑 ---
 const router = useRouter()
-const store = Player()
+const player = Player()
 const songs = ref<SongItem[]>([])
 
 // 获取数据
@@ -89,8 +74,9 @@ const playSong = (song: SongItem) => {
   // store.play(song.id)
   // 或者添加到播放列表
   //store.addWholePlaylist([song.id])
-  store.addSongToPlaylist(song.id, store.currentSongIndex + 1)
-  store.playcurrentSong({ firstId: song.id })
+  player.addSongToPlaylist(song.id, player.currentSongIndex + 1)
+  player.nextSongUrl = null
+  player.playcurrentSong({ firstId: song.id })
 }
 
 const goToAllSongs = () => {
