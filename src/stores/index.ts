@@ -494,10 +494,11 @@ export const Player = defineStore(
     }
     const removeSongFromPlaylist = (songId: number | string) => {
       const wasPlaying = currentSong.value === songId // 检查是否是当前播放的歌曲
+      const nextid = playlist.value[currentSongIndex.value + 1]
       playlist.value = playlist.value.filter((song) => song !== songId) // 从播放列表中移除歌曲
       currentSongList.value = currentSongList.value.filter((song) => song.id !== songId)
       if (wasPlaying && playlist.value.length > 0) {
-        playNextSong() // 如果移除的是当前播放的歌曲且播放列表不为空，切换到下一首
+        playcurrentSong(nextid) // 如果移除的是当前播放的歌曲且播放列表不为空，切换到下一首
       } else if (playlist.value.length === 0) {
         currentSong.value = null
         audio.pause()

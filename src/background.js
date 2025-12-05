@@ -63,6 +63,18 @@ const createWindow = () => {
       }
     }, 100)
   })
+  mainWindow.on('close', () => {
+    if (lyricWindow && !lyricWindow.isDestroyed()) {
+      mainWindow.webContents.send('deskLyric-Status', false)
+    }
+  })
+  mainWindow.on('closed', () => {
+    mainWindow = null
+    // 如果歌词窗口存在且未被销毁，则关闭它
+    if (lyricWindow && !lyricWindow.isDestroyed()) {
+      lyricWindow.close()
+    }
+  })
 }
 
 const createLyricWindow = () => {

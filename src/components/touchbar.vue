@@ -231,9 +231,7 @@
 import { ref, onMounted, watch, onUnmounted, nextTick } from 'vue'
 import { Player } from '@/stores/index'
 import { pagecontrol } from '@/stores/page'
-import { GetPersonalFM } from '@/api/GetMusicList'
 import { useRouter } from 'vue-router'
-import { event } from '../../net/interface'
 
 const router = useRouter()
 const player = Player()
