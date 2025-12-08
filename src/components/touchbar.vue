@@ -373,9 +373,8 @@ function prev() {
   if (player.playlist?.length) player.playPrevSong ? player.playPrevSong() : player.playNextSong()
 }
 const next = async () => {
-  player.playNextSong()
+  player.playNextSong && player.playNextSong()
 }
-
 const TurnIn = (artistid) => {
   router.push({ name: 'artist', params: { id: artistid } })
 }
