@@ -121,57 +121,132 @@ export const Player = defineStore(
       }
       await playNextSong() // 播放下一首歌曲
     }
+    const isValidUrl = (url: string | null | undefined) => {
+      return url && typeof url === 'string' && url.length > 0
+    }
 
+    // 核心封装：获取可播放的 URL
+    const getPlayableUrl = async (id: number | string, songDetail?: any) => {
+      let finalUrl: string | null = null
+
+      // 1. 尝试获取标准 URL
+      try {
+        const res = await MusicUrl({ id })
+        if (res && res[0] && isValidUrl(res[0].url)) {
+          finalUrl = res[0].url
+        }
+      } catch (e) {
+        console.warn('标准 URL 获取失败', e)
+      }
+
+      // 2. 判断是否需要解灰 (如果 URL 无效，或者是非 VIP 看 VIP 歌，或者原本就是灰歌)
+      // 获取详情用于辅助判断（如果外部没传，就获取一下）
+      let detail = songDetail
+      if (!detail) {
+        const detailRes = await GetMusicDetail({ ids: id })
+        detail = detailRes?.songs?.[0]
+      }
+
+      const isVipSong = detail?.fee === 1 || detail?.fee === 4 || detail?.fee === 8
+      const isNoVipUser = userinfo.viptype === 0
+      // 关键：检查 privilege，st < 0 通常代表无版权/下架
+      const isGraySong = detail?.privilege?.st < 0
+
+      // 触发解灰的条件：标准 URL 无效 OR (是VIP歌且用户非VIP) OR 是灰歌
+      if (!isValidUrl(finalUrl) || (isVipSong && isNoVipUser) || isGraySong) {
+        console.log(`歌曲 ${id} 需要解灰或解锁 VIP...`)
+        try {
+          const unblockRes = await UnblockMusicUrl(id)
+          // 确保解灰接口返回的数据结构正确，通常是 unblockRes.data.url 或 unblockRes.url
+          const unblockUrl = unblockRes?.data?.url || unblockRes?.url
+
+          if (isValidUrl(unblockUrl)) {
+            finalUrl = unblockUrl
+            console.log('解灰成功')
+          }
+        } catch (e) {
+          console.error('解灰失败', e)
+        }
+      }
+
+      return finalUrl
+    }
     audio.addEventListener('ended', End)
     // 监听错误
+    // 防止无限死循环
+    const isRetrying = ref(false)
+
+    // 监听错误
     audio.addEventListener('error', async (e) => {
-      if (!isSwitch.value) {
-        if(isLocalSong(currentSong.value)){
-          audio.src = currentSongUrl.value.toString()
-          await audio.load()
-          audio.currentTime = currentSongTime.value
-          audio.play()
-          return
-        }
-        console.error('音频加载错误:', e)
-        const reloadurl = ref(null)
-        const reloadurlUnblock = ref(null)
-        const reloadnexturl = ref(null)
-        const normalurl = await MusicUrl({ id: playlist.value[currentSongIndex.value] })
-        const nextindex = currentSongIndex.value + 1
-        reloadurl.value = normalurl[0].url
-        if (reloadurl.value === null) {
-          reloadurlUnblock.value = await UnblockMusicUrl(playlist.value[currentSongIndex.value])
-          reloadurl.value = reloadurlUnblock.value.data.url // 获取歌曲 URL
-        }
-        reloadnexturl.value = await MusicUrl({ id: playlist.value[nextindex] })
-        nextSongUrl.value = reloadnexturl.value[0].url
-        if (
-          nextSongUrl.value === null ||
-          ((currentSongDetail.value.fee === 1 || 4) && userinfo.viptype === 0)
-        ) {
-          reloadnexturl.value = await UnblockMusicUrl(playlist.value[nextindex])
-          nextSongUrl.value = reloadnexturl.value.data.url
-        }
-        audio.src = reloadurl.value.toString()
-        await audio.load()
+      if (!currentSong.value || isSwitch.value || isRetrying.value) return
+      console.warn('播放出错，尝试自动恢复...', e)
+
+      if (isLocalSong(currentSong.value)) {
+        audio.src = currentSongUrl.value.toString()
+        audio.load()
         audio.currentTime = currentSongTime.value
         audio.play()
-        //isplaying.value = false
+        isplaying.value = true
+        return
+      }
+
+      // 3. 在线歌曲出错（通常是 403 过期）
+      try {
+        isRetrying.value = true // 开启重试锁
+        const songId = currentSong.value
+        console.log(`正在为歌曲 ${songId} 获取新链接...`)
+
+        // 重新请求接口获取最新链接（强制不使用缓存/预加载变量）
+        let newUrl = ''
+        const detail = await GetMusicDetail({ ids: songId })
+        newUrl = await getPlayableUrl(songId, detail.songs[0])
+
+        if (newUrl) {
+          console.log('获取到新链接，重新加载:', newUrl)
+
+          // 记录当前播放进度
+          const savedTime = audio.currentTime || currentSongTime.value || 0
+
+          // 替换链接并播放
+          currentSongUrl.value = newUrl
+          audio.src = newUrl
+          audio.load()
+          audio.currentTime = savedTime
+
+          try {
+            await audio.play()
+            isplaying.value = true
+            isRetrying.value = false // 恢复成功，解锁
+            preload()
+          } catch (playError) {
+            console.error('新链接播放依然失败，跳过此歌:', playError)
+            isRetrying.value = false
+            playNextSong()
+          }
+        } else {
+          console.error('无法获取新链接，跳过...')
+          isRetrying.value = false
+          playNextSong()
+        }
+      } catch (err) {
+        console.error('恢复逻辑发生异常:', err)
+        isRetrying.value = false
+        isplaying.value = false
       }
     })
+
     const play = async () => {
       if (currentSong.value && isplaying.value === false) {
         isplaying.value = true
-        if(isLocalSong(currentSong.value)){
+        if (isLocalSong(currentSong.value)) {
           audio.src = currentSongUrl.value.toString()
           await audio.load()
           audio.currentTime = currentSongTime.value
           audio.play()
           return
         }
-        const urls = await MusicUrl({ id: currentSong.value })
-        const url = currentSongUrl.value ?? urls[0].url
+        const detail = await GetMusicDetail({ ids: currentSong.value })
+        const url = await getPlayableUrl(currentSong.value, detail.songs[0])
         audio.src = url
         //setupAudioListener()
         await audio.load()
@@ -192,7 +267,6 @@ export const Player = defineStore(
 
       // 检查是否为本地歌曲
       if (isLocalSong(id)) {
-        // 本地歌曲播放逻辑
         try {
           const localSongRes = await window.electronAPI?.getLocalSongById(id)
           if (!localSongRes?.success || !localSongRes.song) {
@@ -200,29 +274,20 @@ export const Player = defineStore(
             isSwitch.value = false
             return
           }
-
           const localSong = localSongRes.song
-
-          // 获取本地文件URL
           const urlRes = await window.electronAPI?.getLocalFileUrl(localSong.path)
           if (!urlRes?.success || !urlRes.url) {
             console.error('获取本地文件URL失败:', urlRes?.error)
             isSwitch.value = false
             return
           }
-
-          // 使用 local-resource 协议
           const fileUrl = `local-resource://${localSong.path.replace(/\\/g, '/')}`
-
           isplaying.value = true
           currentSongUrl.value = fileUrl
-
-          // 尝试获取歌词 (如果有匹配的网易云ID)
           if (localSong.neteaseId) {
             try {
               const lyricRes = await GetMusicLyric(localSong.neteaseId)
               const lrcRes = await GetWordMusicLyric(localSong.neteaseId)
-
               currentSongLyric.value = lyricRes.lrc?.lyric || null
               currentSongTLyric.value = lyricRes.tlyric?.lyric || null
               currentSongYrc.value = lrcRes.yrc?.lyric || null
@@ -243,7 +308,6 @@ export const Player = defineStore(
             currentSongTYrc.value = null
             currentSongRoMaYrc.value = null
           }
-
           currentSongDetail.value = {
             id: localSong.id as any, // 本地歌曲ID为字符串
             name: localSong.title,
@@ -253,7 +317,6 @@ export const Player = defineStore(
             album: localSong.album,
             fee: 0,
           }
-
           currentSong.value = id
           audio.src = fileUrl
           currentSongTime.value = 0
@@ -261,7 +324,9 @@ export const Player = defineStore(
           await audio.load()
           await audio.play()
           isSwitch.value = false
-          if(!isLocalSong(playlist.value[currentSongIndex.value + 1])){
+          const nextIndex = currentSongIndex.value + 1
+          if (!isLocalSong(playlist.value[nextIndex])) {
+            console.log('当前本地预加载下一首在线')
             preload()
           }
           return
@@ -273,40 +338,24 @@ export const Player = defineStore(
       }
 
       // 原有的网易云歌曲播放逻辑
-      const unblockurls = ref(null)
-      const canUsePreload = nextSongUrl.value && !ispre //
-      const urls = ref(null)
+      const canUsePreload = nextSongUrl.value && !ispre
       const data = ref(null)
       const lyric = ref(null)
       const lrc = ref(null)
-      const currentdetail = ref(null)
+      let finalUrl: string | null = null
       isplaying.value = true // 设置播放状态为 true
       console.log('nexturl', nextSongUrl.value)
+
       if (!canUsePreload) {
         console.log('不使用预加载')
-        const normalurl = await MusicUrl({ id: id })
-        urls.value = normalurl[0].url
-        if (urls.value === null) {
-          unblockurls.value = await UnblockMusicUrl(id)
-          urls.value = unblockurls.value.data.url // 获取歌曲 URL
-        }
-        // 获取歌曲详细信息
-        currentdetail.value = await GetMusicDetail({ ids: id })
-        data.value = currentdetail.value
-        console.log('fee', typeof currentdetail.value.songs[0].fee)
-        console.log('currentdetail', currentdetail.value.privilege)
-        if (
-          (currentdetail.value.songs[0].fee === 1 || currentdetail.value.songs[0].fee === 4) &&
-          userinfo.viptype === 0
-        ) {
-          const freeurl = await UnblockMusicUrl(id)
-          urls.value = freeurl.data.url
-        }
-
+        console.log('usepreload', canUsePreload)
+        const currentdetail = await GetMusicDetail({ ids: id })
+        data.value = currentdetail.songs[0]
+        finalUrl = await getPlayableUrl(id, data.value)
         lyric.value = await GetMusicLyric(id)
         lrc.value = await GetWordMusicLyric(id) //逐字歌词
       } else {
-        urls.value = nextSongUrl.value
+        finalUrl = nextSongUrl.value
         data.value = nextSongDetail.value
         lyric.value = nextSongLyric.value
         lrc.value = nextSongLrc.value
@@ -314,11 +363,11 @@ export const Player = defineStore(
         console.log('data', data.value)
       }
       //const wordlyric = await GetWordMusicLyric(id)
-      const detail = data.value.songs[0]
+      const detail = data.value
       console.log('detail', detail)
       // 设置当前歌曲详细信息
-      currentSongUrl.value = urls.value
-      const url = currentSongUrl.value.toString()
+      currentSongUrl.value = finalUrl
+      const url = currentSongUrl.value
       currentSongLyric.value = lyric.value.lrc?.lyric
       currentSongTLyric.value = lyric.value.tlyric?.lyric || null
       currentSongYrc.value = lrc.value.yrc?.lyric || null //逐字
@@ -343,39 +392,22 @@ export const Player = defineStore(
       await audio.load()
       await audio.play() // 播放音频
       isSwitch.value = false //恢复锁
+      isRetrying.value = false
       const nextIndex = currentSongIndex.value + 1 //用于判断
-      console.log('预加载', nextIndex)
-      if (nextIndex <= playlist.value.length - 1) {
+      if (nextIndex <= playlist.value.length - 1 && !isLocalSong(playlist.value[nextIndex])) {
+        console.log('预加载', nextIndex)
         preload()
       } else nextSongUrl.value = null
     }
 
     //预加载
     const preload = async () => {
-      const nextdata = ref(null) //临时url
-      const nextdetail = ref(null) //临时detail
       const nextindex = currentSongIndex.value + 1 //用于索引
       console.log('current', currentSongIndex.value)
       console.log('next', nextindex)
-      const nexturls = await MusicUrl({ id: playlist.value[nextindex] })
-      console.log('nextid', playlist.value[nextindex])
-      nextSongUrl.value = nexturls[0].url
-      if (nexturls[0].url === null) {
-        const nextunblock = await UnblockMusicUrl(playlist.value[nextindex]) // 获取歌曲 URL
-        nextdata.value = nextunblock.data.url
-        nextSongUrl.value = nextdata.value
-      }
-      nextdetail.value = await GetMusicDetail({ ids: playlist.value[nextindex] }) // 获取歌曲详细信息
-      console.log('nextdetail', nextdetail)
-      nextSongDetail.value = nextdetail.value
-      if (
-        (nextdetail.value.songs[0].fee === 1 || nextdetail.value.songs[0].fee === 4) &&
-        userinfo.viptype === 0
-      ) {
-        const freeurl = await UnblockMusicUrl(playlist.value[nextindex])
-        nextdata.value = freeurl.data.url
-        nextSongUrl.value = nextdata.value
-      }
+      const songDetail = await GetMusicDetail({ ids: playlist.value[nextindex] }) // 获取歌曲详细信息
+      nextSongDetail.value = songDetail.songs[0]
+      nextSongUrl.value = await getPlayableUrl(playlist.value[nextindex], nextSongDetail.value)
       nextSongLyric.value = await GetMusicLyric(playlist.value[nextindex])
       nextSongLrc.value = await GetWordMusicLyric(playlist.value[nextindex])
     }
@@ -516,6 +548,7 @@ export const Player = defineStore(
           play()
           return
         }
+
         audio.src = currentSongUrl.value.toString()
         await audio.load()
         audio.currentTime = currentSongTime.value
@@ -527,6 +560,7 @@ export const Player = defineStore(
           .catch((e) => {
             console.error('play failed', e)
             isplaying.value = false
+            play()
           })
       }
     }
@@ -559,7 +593,9 @@ export const Player = defineStore(
         song.value = randomsong
       }
       const mappedFmSongs = ref()
-      if (playFM) {
+      if (playFM.value) {
+        console.log('isFM')
+        console.log(playFM.value)
         if (currentSongIndex.value - playlist.value.length <= 3) {
           const fmRes = await GetPersonalFM()
           const fmList = fmRes.data
@@ -717,7 +753,6 @@ export const Player = defineStore(
       addSongsToPlaylist,
       randomplaymodel,
       onlyoneplaymodel,
-      
     }
   },
   {

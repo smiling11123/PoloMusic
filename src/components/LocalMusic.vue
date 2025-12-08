@@ -266,6 +266,7 @@ const handleMenuAction = async (action: string, song: any) => {
     // 下一首播放
     await player.addSongToPlaylist(song.id, player.currentSongIndex + 1)
     player.nextSongUrl = null // 清除预加载
+    player.loadPlaylistData()
   } else if (action === 'delete') {
     // 从列表删除
     const confirmDelete = confirm(`确定要从列表中移除 "${song.name}" 吗？`)
@@ -308,7 +309,7 @@ function formatTime(s: number) {
 <style scoped lang="scss">
 $bg: #1c1c1e;
 $text: #e0e0e0;
-$primary: #0bdc9a;
+$primary: #fff;
 $menu-bg: #1c1c1e; // 菜单背景
 $menu-hover: #3a3a3a; // 菜单悬停
 

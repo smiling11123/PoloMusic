@@ -615,7 +615,7 @@ button:focus {
 }
 
 .primary-btn {
-  background: #ea4c89;
+  background: #1c1c1c;
   color: #fff;
   border: none;
   padding: 8px 16px;
@@ -645,7 +645,7 @@ button:focus {
 
 .progress-fill {
   height: 100%;
-  background: #ea4c89;
+  background: #fff;
   transition: width 0.3s ease;
 }
 

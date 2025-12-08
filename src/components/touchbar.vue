@@ -262,10 +262,6 @@ const bindAudioEvents = () => {
     duration.value = audio.duration || 0
   })
 
-  audio.addEventListener('error', (e) => {
-    console.error('audio error', e, audio.src)
-  })
-
   audio.volume = volume.value
   isEventBound = true
 }
@@ -400,7 +396,7 @@ const tocomment = () => {
 </script>
 
 <style scoped>
-/* 布局核心：Grid 布局 
+/* 布局核心：Grid 布局
   解决混乱的关键：左中右三栏，中间自适应但最大宽度受限，左右两边平分剩余空间
 */
 button:focus {
