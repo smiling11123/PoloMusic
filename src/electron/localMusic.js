@@ -3,7 +3,7 @@ const path = require('node:path')
 const fs = require('node:fs')
 const crypto = require('node:crypto')
 const db = require('./db')
-const { success } = require('../../net/util/logger')
+
 
 // 支持的音频格式
 const SUPPORTED_AUDIO_EXTENSIONS = ['.mp3', '.flac', '.wav', '.aac', '.m4a', '.ogg', '.wma']
@@ -95,7 +95,25 @@ const initLocalMusic = () => {
         const picture = metadata.common.picture[0]
         coverBase64 = `data:${picture.format};base64,${picture.data.toString('base64')}`
       }
-
+      let lyric = null
+      let yrc = null
+      const extname = path.extname(filePath)
+      const lrcpath = filePath.slice(0, -extname.length) + '.lrc'
+      const yrcpath = filePath.slice(0, -extname.length) + '.yrc'
+      try {
+        if (fs.existsSync(lrcpath)) {
+          lyric = fs.readFileSync(lrcpath, 'utf-8')
+        }
+        if (fs.existsSync(yrcpath)) {
+          yrc = fs.readFileSync(yrcpath, 'utf-8')
+        }
+      } catch (error) {
+        console.log('无外挂歌词')
+      }
+      if (!lyric && !yrc && metadata.common.lyrics && metadata.common.lyrics.length > 0) {
+        // music-metadata 返回的 lyrics 是一个字符串数组，通常直接 join 即可
+        lyric = metadata.common.lyrics.join('\n')
+      }
       return {
         id,
         md5,
@@ -105,6 +123,8 @@ const initLocalMusic = () => {
         album: metadata.common.album || '未知专辑',
         duration: metadata.format.duration || 0,
         cover: coverBase64,
+        lyric: lyric || null,
+        yrc: yrc || null,
       }
     } catch (error) {
       console.error('解析元数据失败:', error)
@@ -122,6 +142,8 @@ const initLocalMusic = () => {
         album: '未知专辑',
         duration: 0,
         cover: null,
+        lyric: null,
+        yrc: null,
       }
     }
   })
@@ -275,9 +297,9 @@ const initLocalMusic = () => {
   // 更新歌曲匹配信息（网易云ID、封面URL等）
   ipcMain.handle(
     'local:updateMatchInfo',
-    async (event, { id, neteaseId, coverUrl, artist, album, title }) => {
+    async (event, { id, neteaseId, coverUrl, artist, album, title, lyric, Tlyric, yrc, Tyrc, Romaji }) => {
       try {
-        const result = db.updateSongMatchInfo(id, { neteaseId, coverUrl, artist, album, title })
+        const result = db.updateSongMatchInfo(id, { neteaseId, coverUrl, artist, album, title, lyric, Tlyric, yrc, Tyrc, Romaji  })
         return { success: result.changes > 0 }
       } catch (error) {
         console.error('更新匹配信息失败:', error)

@@ -14,7 +14,7 @@
       @update:size="handleSplitResize"
     >
       <template #1>
-        <div class="scroll-pane left-pane-content" v-if="pagecontroler.IsLogin" key="homepage">
+        <div class="scroll-pane left-pane-content" v-if="pagecontroler.IsLogin || pagecontroler.IsSkipLogin" key="homepage">
           <Homepage />
         </div>
         <n-message-provider v-else>
@@ -149,6 +149,9 @@ onMounted(async () => {
 
   // 绑定 Electron 事件
   if (window.electronAPI) {
+    window.electronAPI.getnetstatuslistener(status =>{
+      pagecontroler.IsOnline = status
+    })
     window.electronAPI.global_toggle(handleGlobaltoggle)
     window.electronAPI.global_next(handleGlobalnext)
     window.electronAPI.global_prev(handleGlobalprev)
@@ -157,6 +160,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (window.electronAPI) {
+    
     window.electronAPI.remove_toggle(handleGlobaltoggle)
     window.electronAPI.remove_next(handleGlobalnext)
     window.electronAPI.remove_prev(handleGlobalprev)

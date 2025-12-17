@@ -269,7 +269,7 @@ export const Player = defineStore(
       if (isLocalSong(id)) {
         try {
           const localSongRes = await window.electronAPI?.getLocalSongById(id)
-          if(currentSong.value !== id) return
+          if (currentSong.value !== id) return
           if (!localSongRes?.success || !localSongRes.song) {
             console.error('获取本地歌曲失败:', localSongRes?.error)
             isSwitch.value = false
@@ -277,7 +277,7 @@ export const Player = defineStore(
           }
           const localSong = localSongRes.song
           const urlRes = await window.electronAPI?.getLocalFileUrl(localSong.path)
-          if(currentSong.value !== id) return
+          if (currentSong.value !== id) return
           if (!urlRes?.success || !urlRes.url) {
             console.error('获取本地文件URL失败:', urlRes?.error)
             isSwitch.value = false
@@ -287,15 +287,29 @@ export const Player = defineStore(
           isplaying.value = true
           currentSongUrl.value = fileUrl
           if (localSong.neteaseId) {
+            let lyricRes = null
+            let lrcRes = null
             try {
-              const lyricRes = await GetMusicLyric(localSong.neteaseId)
-              const lrcRes = await GetWordMusicLyric(localSong.neteaseId)
-              if(currentSong.value !== id) return
-              currentSongLyric.value = lyricRes.lrc?.lyric || null
-              currentSongTLyric.value = lyricRes.tlyric?.lyric || null
-              currentSongYrc.value = lrcRes.yrc?.lyric || null
-              currentSongTYrc.value = lrcRes.ytlrc?.lyric || null
-              currentSongRoMaYrc.value = lrcRes.romalrc?.lyric || null
+              if (localSong.lyric || localSong.yrc) {
+                console.log('本地歌词')
+                lyricRes = localSong.lyric
+                lrcRes = localSong.yrc
+                if (currentSong.value !== id) return
+                currentSongLyric.value = lyricRes || null
+                currentSongTLyric.value = null
+                currentSongYrc.value = lrcRes || null
+                currentSongTYrc.value = null
+              } else {
+                console.log('在线歌词')
+                lyricRes = await GetMusicLyric(localSong.neteaseId)
+                lrcRes = await GetWordMusicLyric(localSong.neteaseId)
+                if (currentSong.value !== id) return
+                currentSongLyric.value = lyricRes.lrc?.lyric || null
+                currentSongTLyric.value = lyricRes.tlyric?.lyric || null
+                currentSongYrc.value = lrcRes.yrc?.lyric || null
+                currentSongTYrc.value = lrcRes.ytlrc?.lyric || null
+                currentSongRoMaYrc.value = lrcRes.romalrc?.lyric || null
+              }
             } catch (e) {
               console.warn('获取本地歌曲歌词失败:', e)
               currentSongLyric.value = null
@@ -324,7 +338,7 @@ export const Player = defineStore(
           audio.src = fileUrl
           currentSongTime.value = 0
           audio.currentTime = 0
-          if(currentSong.value !== id) return
+          if (currentSong.value !== id) return
           await audio.load()
           await audio.play()
           isSwitch.value = false
@@ -342,7 +356,8 @@ export const Player = defineStore(
       }
 
       // 原有的网易云歌曲播放逻辑
-      const canUsePreload = nextSongUrl.value && !ispre
+      const canUsePreload =
+        nextSongUrl.value && !ispre && playmodel.value !== 'random' && playmodel.value !== 'onlyone'
       const data = ref(null)
       const lyric = ref(null)
       const lrc = ref(null)
@@ -353,10 +368,10 @@ export const Player = defineStore(
       if (!canUsePreload) {
         console.log('不使用预加载')
         console.log('usepreload', canUsePreload)
-        if(currentSong.value !== id) return
+        if (currentSong.value !== id) return
         const currentdetail = await GetMusicDetail({ ids: id })
         data.value = currentdetail.songs[0]
-        if(currentSong.value !== id) return
+        if (currentSong.value !== id) return
         finalUrl = await getPlayableUrl(id, data.value)
         lyric.value = await GetMusicLyric(id)
         lrc.value = await GetWordMusicLyric(id) //逐字歌词
@@ -374,7 +389,7 @@ export const Player = defineStore(
       const detail = data.value
       console.log('detail', detail)
       // 设置当前歌曲详细信息
-      if(currentSong.value !== id) return
+      if (currentSong.value !== id) return
       currentSongUrl.value = finalUrl
       const url = currentSongUrl.value
       currentSongLyric.value = lyric.value.lrc?.lyric
@@ -399,7 +414,7 @@ export const Player = defineStore(
       audio.currentTime = 0
       //setupAudioListener() // 设置音频监听器
       await audio.load()
-      if(currentSong.value !== id) return
+      if (currentSong.value !== id) return
       await audio.play() // 播放音频
       isSwitch.value = false //恢复锁
       isRetrying.value = false
@@ -589,10 +604,12 @@ export const Player = defineStore(
       //audio.currentTime = currentSongTime.value
       console.log(playmodel.value)
       if (playmodel.value === 'onlyone') {
+        nextSongUrl.value = null
         const onlyonesong = playlist.value[currentIndex]
         song.value = onlyonesong
       } else if (playmodel.value === 'random') {
         console.log('israndom')
+        nextSongUrl.value = null
         let randomindex
         do {
           randomindex = Math.floor(Math.random() * playlist.value.length)

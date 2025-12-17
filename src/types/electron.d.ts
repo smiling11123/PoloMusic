@@ -35,37 +35,37 @@ declare global {
     addLocalSong: (
       song: LocalSong,
     ) => Promise<{ success: boolean; id?: string; error?: string; message?: string }>
-    addLocalSongs: (
-      songs: LocalSong[],
-    ) => Promise<{ success: boolean; addedCount?: number; error?: string }>
+    // addLocalSongs: (
+    //   songs: LocalSong[],
+    // ) => Promise<{ success: boolean; addedCount?: number; error?: string }>
     getAllLocalSongs: () => Promise<{ success: boolean; songs: LocalSong[]; error?: string }>
     getLocalSongById: (
       id: string,
     ) => Promise<{ success: boolean; song?: LocalSong; error?: string }>
-    getPlaylistSongs: (
-      id: string,
-    ) => Promise<{ success: boolean; songs?: LocalSong[]; error?: string }>
+    // getPlaylistSongs: (
+    //   id: string,
+    // ) => Promise<{ success: boolean; songs?: LocalSong[]; error?: string }>
     getLocalByIds: (
       ids: string[],
     ) => Promise<{ success: boolean; songs: LocalSong[]; error?: string }>
     deleteLocalSong: (id: string) => Promise<{ success: boolean; error?: string }>
-    deleteLocalSongs: (
-      ids: string[],
-    ) => Promise<{ success: boolean; deletedCount?: number; error?: string }>
-    checkLocalFileExists: (path: string) => Promise<boolean>
-    searchLocalSongs: (
-      keyword: string,
-    ) => Promise<{ success: boolean; songs: LocalSong[]; error?: string }>
-    getLocalSongCount: () => Promise<{ success: boolean; count: number; error?: string }>
+    // deleteLocalSongs: (
+    //   ids: string[],
+    // ) => Promise<{ success: boolean; deletedCount?: number; error?: string }>
+    // checkLocalFileExists: (path: string) => Promise<boolean>
+    // searchLocalSongs: (
+    //   keyword: string,
+    // ) => Promise<{ success: boolean; songs: LocalSong[]; error?: string }>
+    // getLocalSongCount: () => Promise<{ success: boolean; count: number; error?: string }>
     getLocalFileUrl: (
       path: string,
     ) => Promise<{ success: boolean; url?: string; error?: string; message?: string }>
-    onLocalFileChange: (
-      callback: (event: any, data: { type: string; path: string }) => void,
-    ) => void
-    removeLocalFileChangeListener: (
-      callback: (event: any, data: { type: string; path: string }) => void,
-    ) => void
+    // onLocalFileChange: (
+    //   callback: (event: any, data: { type: string; path: string }) => void,
+    // ) => void
+    // removeLocalFileChangeListener: (
+    //   callback: (event: any, data: { type: string; path: string }) => void,
+    // ) => void
     updateLocalSongMatchInfo: (data: {
       id: string
       neteaseId?: number
@@ -73,6 +73,11 @@ declare global {
       artist?: string
       album?: string
       title?: string
+      lyric?: string
+      Tlyric?: string
+      yrc?: string
+      Tyrc?: string
+      Romaji?: string
     }) => Promise<{ success: boolean; error?: string }>
 
     // Local Playlist Methods
@@ -80,22 +85,27 @@ declare global {
     getLocalPlaylistSongs: (
       playlistId: string,
     ) => Promise<{ success: boolean; songs: LocalSong[]; error?: string }>
-    getSongCountByList: (
-      playlistId: string,
-    ) => Promise<{ success: boolean; songs: LocalSong[]; error?: string }>
+    // getSongCountByList: (
+    //   playlistId: string,
+    // ) => Promise<{ success: boolean; songs: LocalSong[]; error?: string }>
     addSongToLocalPlaylist: (data: {
       playlistId: string
       songId: string
     }) => Promise<{ success: boolean; error?: string }>
-    removeSongFromLocalPlaylist: (data: {
-      playlistId: string
-      songId: string
-    }) => Promise<{ success: boolean; error?: string }>
+    // removeSongFromLocalPlaylist: (data: {
+    //   playlistId: string
+    //   songId: string
+    // }) => Promise<{ success: boolean; error?: string }>
     createLocalPlaylist: (
       name: string,
     ) => Promise<{ success: boolean; id?: string; error?: string }>
     deleteLocalPlaylist: (id: string) => Promise<{ success: boolean; error?: string }>
+
+    //网络检测
+    getnetstatuschange: () => Promise<boolean>
+    getnetstatuslistener: (callback: (status: boolean) => void ) => void
     // 如需更多方法，按上面格式继续添加
+
   }
 
   interface LocalSong {
@@ -110,6 +120,11 @@ declare global {
     neteaseId?: number
     coverUrl?: string
     importAt?: number
+    lyric?: string | null
+    yrc?: string | null
+    Tlyric?: string | null
+    Tyrc?: string | null
+    Romaji?: string | null
   }
 
   interface Window {

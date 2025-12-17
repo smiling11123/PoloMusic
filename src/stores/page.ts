@@ -5,9 +5,11 @@ export const pagecontrol = defineStore('pagecontrol', () => {
   const ShowPlayList = ref(false)
   const ShowAdditionRight = ref(false)
   const ShowDeskLyric = ref(false)
+  const IsOnline = ref(true)
   //IsLogin: false
   const ShowQRCode = ref(false)
   const IsLogin = ref(false)
+  const IsSkipLogin = ref(false)
   const IsFold = ref(false)
   const isShowLyric = () => {
     ShowLyric.value = !ShowLyric.value
@@ -18,6 +20,9 @@ export const pagecontrol = defineStore('pagecontrol', () => {
   const isShowDeskLyric = () => {
     ShowDeskLyric.value = !ShowDeskLyric.value
   }
+  const isSkipLogin = () => {
+    IsSkipLogin.value = !IsSkipLogin.value
+  }
 
   return {
     ShowLyric,
@@ -25,11 +30,14 @@ export const pagecontrol = defineStore('pagecontrol', () => {
     ShowAdditionRight,
     ShowQRCode,
     ShowDeskLyric,
+    IsSkipLogin,
     IsLogin,
     IsFold,
+    IsOnline,
     isShowLyric,
     isShowPlayList,
     isShowDeskLyric,
+    isSkipLogin,
   }
 
 },
@@ -40,6 +48,7 @@ export const pagecontrol = defineStore('pagecontrol', () => {
       paths: [
         'IsLogin',
         'IsFold',
+        'IsSkipLogin',
         'ShowDeskLyric',
       ],
     } as any

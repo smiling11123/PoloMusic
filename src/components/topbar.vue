@@ -105,7 +105,73 @@
     </div>
 
     <div class="right">
-      <!-- 用户头像和下拉菜单 -->
+      <!-- <div class="agent-menu-container" ref="agentMenuContainer">
+        <button class="musichub" @click="toggleAgentMenu" :class="{ active: isAgentMenuOpen }">
+          <svg
+            t="1765440500071"
+            class="icon"
+            viewBox="0 0 1024 1024"
+            version="1.1"
+            xmlns="http://www.w3.org/2000/svg"
+            p-id="11271"
+            width="20"
+            height="20"
+          >
+            <path
+              d="M1021.659429 514.194286a13.019429 13.019429 0 0 1-9.508572 9.508571l-201.581714 50.395429a325.046857 325.046857 0 0 0-236.544 236.470857L523.702857 1012.297143a13.019429 13.019429 0 0 1-25.234286-0.073143l-50.395428-201.654857A325.046857 325.046857 0 0 0 211.456 574.171429l-201.654857-50.468572a13.019429 13.019429 0 0 1 0-25.234286l201.654857-50.468571a325.046857 325.046857 0 0 0 236.470857-236.470857l50.468572-201.581714a13.019429 13.019429 0 0 1 25.234285 0l50.468572 201.654857a325.046857 325.046857 0 0 0 236.470857 236.470857l201.654857 50.468571a13.019429 13.019429 0 0 1 9.508571 15.725715z m-305.152-3.218286l-10.093715-4.534857A416.256 416.256 0 0 1 515.657143 315.611429l-4.608-10.093715-4.681143 10.093715a416.256 416.256 0 0 1-190.829714 190.829714l-10.093715 4.534857 10.166858 4.754286A416.256 416.256 0 0 1 506.368 706.56l4.608 10.020571 4.681143-10.020571a416.256 416.256 0 0 1 190.756571-190.756571l10.093715-4.754286zM893.366857 28.598857l5.705143 23.113143c11.264 45.348571 46.665143 80.676571 91.940571 91.940571l23.113143 5.778286a13.019429 13.019429 0 0 1 0 25.234286l-23.113143 5.851428a126.390857 126.390857 0 0 0-91.940571 91.867429l-5.778286 23.113143a13.019429 13.019429 0 0 1-25.161143 0l-5.851428-23.113143a126.390857 126.390857 0 0 0-91.940572-91.940571l-23.04-5.778286a13.019429 13.019429 0 0 1 0-25.234286l23.04-5.778286A126.464 126.464 0 0 0 862.354286 51.712l5.778285-23.113143a13.019429 13.019429 0 0 1 25.307429 0z"
+              fill="#bfbfbf"
+              p-id="11272"
+            ></path>
+          </svg>
+        </button>
+
+        <transition name="fade-slide">
+          <div class="agent-dropdown" v-show="isAgentMenuOpen">
+            <div class="agent-header">
+              <span>✨ Polomusic AI</span>
+              <span class="clear-chat" @click="clearChat" title="清空对话">🗑️</span>
+            </div>
+
+            <div class="chat-body" ref="chatBodyRef">
+              <div v-if="chatMessages.length === 0" class="empty-state">
+                <p>👋 你好！我是你的音乐助手。</p>
+                <p>试着问我："推荐几首周杰伦的歌" 或 "我想听些伤感的轻音乐"</p>
+              </div>
+
+              <div
+                v-for="(msg, index) in chatMessages"
+                :key="index"
+                :class="['message-row', msg.role]"
+              >
+                <div class="bubble">
+                  <span v-if="msg.role === 'assistant' && msg.isLoading" class="typing-dots">
+                    <span>.</span><span>.</span><span>.</span>
+                  </span>
+                  <span v-else>{{ msg.content }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="chat-input-area">
+              <input
+                v-model="agentInputValue"
+                type="text"
+                placeholder="输入你的需求..."
+                @keyup.enter="sendAgentMessage"
+                :disabled="isAgentThinking"
+              />
+              <button
+                class="send-btn"
+                @click="sendAgentMessage"
+                :disabled="!agentInputValue.trim() || isAgentThinking"
+              >
+                ↑
+              </button>
+            </div>
+          </div>
+        </transition>
+      </div> -->
+
       <div class="user-menu-container" ref="userMenuContainer">
         <button class="user" @click="toggleUserMenu">
           <img
@@ -117,42 +183,54 @@
           <img class="userPic" v-else src="/user.jpg" alt="默认头像" />
         </button>
 
-        <!-- 下拉菜单 -->
-        <div class="dropdown-menu" v-show="isUserMenuOpen">
-          <div class="menu-item" @click="goToUserProfile">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-              <path
-                d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
-              />
-            </svg>
-            <span>个人中心</span>
+        <transition name="fade-slide">
+          <div class="dropdown-menu" v-show="isUserMenuOpen">
+            <div
+              class="menu-item"
+              @click="goToLogin"
+              v-if="pagecontroler.IsSkipLogin && !pagecontroler.IsLogin"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                <path
+                  d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+                />
+              </svg>
+              <span>登录</span>
+            </div>
+            <div class="menu-item" @click="goToSettings">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                <path
+                  d="M19.14,12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24,0-.43.17-.47.41l-.36,2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47,0-.59.22L2.74,8.87c-.12.21-.08.47.12.61l2.03,1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03,1.58c-.18.14-.23.41-.12.61l1.92,3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36,2.54c.05.24.24.41.48.41h3.84c.24,0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47,0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12,15.6c-1.98,0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6,1.62 3.6,3.6-1.62,3.6-3.6,3.6z"
+                />
+              </svg>
+              <span>设置</span>
+            </div>
+            <div class="menu-item" @click="checkForUpdate">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                <path
+                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"
+                />
+              </svg>
+              <span>检查更新</span>
+            </div>
+            <div
+              class="menu-divider"
+              v-if="!pagecontroler.IsSkipLogin && pagecontroler.IsLogin"
+            ></div>
+            <div
+              class="menu-item"
+              @click="handleLogout"
+              v-if="!pagecontroler.IsSkipLogin && pagecontroler.IsLogin"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                <path
+                  d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"
+                />
+              </svg>
+              <span>退出登录</span>
+            </div>
           </div>
-          <div class="menu-item" @click="goToSettings">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-              <path
-                d="M19.14,12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24,0-.43.17-.47.41l-.36,2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47,0-.59.22L2.74,8.87c-.12.21-.08.47.12.61l2.03,1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03,1.58c-.18.14-.23.41-.12.61l1.92,3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36,2.54c.05.24.24.41.48.41h3.84c.24,0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47,0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12,15.6c-1.98,0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6,1.62 3.6,3.6-1.62,3.6-3.6,3.6z"
-              />
-            </svg>
-            <span>设置</span>
-          </div>
-          <div class="menu-item" @click="checkForUpdate">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-              <path
-                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"
-              />
-            </svg>
-            <span>检查更新</span>
-          </div>
-          <div class="menu-divider"></div>
-          <div class="menu-item" @click="handleLogout">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-              <path
-                d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"
-              />
-            </svg>
-            <span>退出登录</span>
-          </div>
-        </div>
+        </transition>
       </div>
 
       <button class="win-btn" @click="minimize" title="最小化">━</button>
@@ -160,11 +238,9 @@
       <button class="win-btn close" @click="close" title="关闭">✕</button>
     </div>
 
-    <!-- Update Modal -->
     <div class="update-modal-overlay" v-if="updateStatus !== 'idle'">
       <div class="update-modal">
         <h3>软件更新</h3>
-
         <div class="status-content">
           <div v-if="updateStatus === 'checking'">正在检查更新...</div>
           <div v-if="updateStatus === 'not-available'">当前已是最新版本</div>
@@ -187,7 +263,6 @@
             <p class="error-msg">{{ updateError }}</p>
           </div>
         </div>
-
         <button
           class="close-modal-btn"
           @click="closeUpdateModal"
@@ -201,13 +276,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { userInfo } from '@/stores/userInfo'
 import { pagecontrol } from '@/stores/page'
 import { useRouter } from 'vue-router'
 import { search } from '@/stores/search'
 import SearchBox from './SearchBox.vue'
 import { LogOut } from '@/api/Login'
+import { getMusicRecommendation } from '@/Agent/Gorq'
 
 const searcher = search()
 const router = useRouter()
@@ -215,87 +291,127 @@ const isMax = ref(false)
 const userInfos = userInfo()
 const searchKeyWord = ref('')
 const pagecontroler = pagecontrol()
-const isUserMenuOpen = ref(false)
-const userMenuContainer = ref<HTMLDivElement>()
 
-const minimize = () => {
-  window.electronAPI?.minimize?.()
+// Menu State
+const isUserMenuOpen = ref(false)
+const isAgentMenuOpen = ref(false)
+const userMenuContainer = ref<HTMLDivElement>()
+const agentMenuContainer = ref<HTMLDivElement>()
+
+// === AI Agent Logic ===
+const chatBodyRef = ref<HTMLDivElement>()
+const agentInputValue = ref('')
+const isAgentThinking = ref(false)
+
+interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+  isLoading?: boolean
 }
 
+const chatMessages = ref<ChatMessage[]>([])
+
+const clearChat = () => {
+  chatMessages.value = []
+}
+
+const scrollToBottom = async () => {
+  await nextTick()
+  if (chatBodyRef.value) {
+    chatBodyRef.value.scrollTop = chatBodyRef.value.scrollHeight
+  }
+}
+
+const sendAgentMessage = async () => {
+  const text = agentInputValue.value.trim()
+  if (!text || isAgentThinking.value) return
+
+  // 1. 用户消息上屏
+  chatMessages.value.push({ role: 'user', content: text })
+  agentInputValue.value = ''
+  scrollToBottom()
+  const result = await getMusicRecommendation(text)
+  // 2. 模拟 AI 思考 (Loading)
+  isAgentThinking.value = true
+  chatMessages.value.push({ role: 'assistant', content: result, isLoading: true })
+  scrollToBottom()
+
+  // 3. 模拟回复 (TODO: 这里后续替换为真实 API 调用)
+  setTimeout(() => {
+    chatMessages.value.pop() // 移除 loading
+    chatMessages.value.push({
+      role: 'assistant',
+      content: `收到！你刚才说的是："${text}"。\n(这是模拟回复，请接入 API 以获取真实推荐)`,
+    })
+    isAgentThinking.value = false
+    scrollToBottom()
+  }, 1500)
+}
+
+// 互斥打开菜单逻辑
+const toggleUserMenu = () => {
+  isUserMenuOpen.value = !isUserMenuOpen.value
+  if (isUserMenuOpen.value) isAgentMenuOpen.value = false
+}
+
+const toggleAgentMenu = () => {
+  isAgentMenuOpen.value = !isAgentMenuOpen.value
+  if (isAgentMenuOpen.value) {
+    isUserMenuOpen.value = false
+    scrollToBottom()
+  }
+}
+
+// 统一点击外部关闭逻辑
+const handleClickOutside = (e: MouseEvent) => {
+  const target = e.target as Node
+
+  if (userMenuContainer.value && !userMenuContainer.value.contains(target)) {
+    isUserMenuOpen.value = false
+  }
+
+  if (agentMenuContainer.value && !agentMenuContainer.value.contains(target)) {
+    isAgentMenuOpen.value = false
+  }
+}
+
+// === Existing Functions ===
+
+const minimize = () => window.electronAPI?.minimize?.()
 const toggleMax = async () => {
   const res = await window.electronAPI?.toggleMaximize?.()
   isMax.value = !!res
 }
-
-const Fold = () => {
-  pagecontroler.IsFold = !pagecontroler.IsFold
+const Fold = () => (pagecontroler.IsFold = !pagecontroler.IsFold)
+const close = () => window.electronAPI?.close?.()
+const gotomusichub = () => router.push({ name: 'wholemusichub' })
+const dosearch = async () => {
+  searcher.keyword = searchKeyWord.value
+  router.push('SearchResult')
 }
 
-const close = () => {
-  window.electronAPI?.close?.()
+const goToLogin= () => {
+  pagecontroler.isSkipLogin()
+  router.replace('/')
+  window.location.reload()
 }
-
-const gotomusichub = () => {
-  router.push({name: "wholemusichub"})
-}
-// 新增：切换下拉菜单
-const toggleUserMenu = () => {
-  isUserMenuOpen.value = !isUserMenuOpen.value
-}
-
-// 新增：点击外部关闭菜单
-const handleClickOutside = (e: MouseEvent) => {
-  if (userMenuContainer.value && !userMenuContainer.value.contains(e.target as Node)) {
-    isUserMenuOpen.value = false
-  }
-}
-
-// 新增：菜单项功能
-const goToUserProfile = () => {
-  //router.push('/user-profile')
-  isUserMenuOpen.value = false
-}
-
-const goToSettings = () => {
-  //router.push('/settings')
-  isUserMenuOpen.value = false
-}
+const goToSettings = () => (isUserMenuOpen.value = false)
 
 const handleLogout = () => {
-  if (!pagecontroler.IsLogin) {
-    return
-    //若没有登录则不执行操作
-  }
+  if (!pagecontroler.IsLogin) return
   LogOut()
-  // 清除用户数据
   localStorage.removeItem('neteaseCookie')
   localStorage.removeItem('userProfile')
   localStorage.removeItem('userDetail')
-
   isUserMenuOpen.value = false
-
   setTimeout(() => {
     router.replace('/')
     window.location.reload()
   }, 1500)
 }
 
-// 监听点击外部事件
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
-})
-
-const dosearch = async () => {
-  searcher.keyword = searchKeyWord.value
-  router.push('SearchResult')
-}
-
 // === Auto Update Logic ===
-const updateStatus = ref('idle') // idle, checking, available, downloading, downloaded, error, not-available
+const updateStatus = ref('idle')
 const downloadProgress = ref(0)
 const updateError = ref('')
 
@@ -304,26 +420,18 @@ const checkForUpdate = () => {
   updateStatus.value = 'checking'
   window.electronAPI?.checkForUpdate()
 }
-
-const startDownload = () => {
-  window.electronAPI?.downloadUpdate()
-}
-
-const quitAndInstall = () => {
-  window.electronAPI?.quitAndInstall()
-}
-
+const startDownload = () => window.electronAPI?.downloadUpdate()
+const quitAndInstall = () => window.electronAPI?.quitAndInstall()
 const closeUpdateModal = () => {
-  if (updateStatus.value === 'downloading') return // Downloading, cannot close
+  if (updateStatus.value === 'downloading') return
   updateStatus.value = 'idle'
 }
 
+// Lifecycle
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
 
-  // Listen for auto-updater messages
   window.electronAPI?.onAutoUpdaterMessage((event, { message, data }) => {
-    console.log('AutoUpdater:', message, data)
     switch (message) {
       case 'checking-for-update':
         updateStatus.value = 'checking'
@@ -336,7 +444,7 @@ onMounted(() => {
         break
       case 'error':
         updateStatus.value = 'error'
-        updateError.value = data?.message || 'Unknown error'
+        updateError.value = data?.message || 'Unknown'
         break
       case 'download-progress':
         updateStatus.value = 'downloading'
@@ -348,12 +456,17 @@ onMounted(() => {
     }
   })
 })
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <style scoped lang="scss">
 button:focus {
   outline: none;
 }
+
 .topbar {
   position: fixed;
   top: 0;
@@ -365,33 +478,13 @@ button:focus {
   justify-content: space-between;
   padding: 0 16px;
   z-index: 1000;
-  background-color: rgb(#1c1c1e,0.1);
+  background-color: rgba(28, 28, 30, 0.1); /* 稍微深一点 */
   -webkit-app-region: drag;
-   /* 关键点 2: 开启毛玻璃模糊效果 */
-  backdrop-filter: blur(20px) saturate(180%); 
+  backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  
-  /* 开启硬件加速 */
-  transform: translateZ(0); 
+  transform: translateZ(0);
   will-change: transform;
-  
-  /* 可选：添加细微的边框线增强层次感 */
   transition: background 0.3s ease;
-}
-
-.btn-control {
-  background: none;
-  width: 25px;
-  height: 25px;
-  border: none;
-  color: rgba(255, 255, 255, 0.6);
-  cursor: pointer;
-  border-radius: 8px;
-  transition: color 0.2s;
-  -webkit-app-region: no-drag;
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-  }
 }
 
 .topbar .left,
@@ -402,83 +495,58 @@ button:focus {
   gap: 10px;
 }
 
-.explore {
-  -webkit-app-region: no-drag;
-}
-
+/* Button Commons */
+.btn-control,
 .tohome,
 .fold,
-.dosearch {
+.dosearch,
+.musichub,
+.user,
+.win-btn {
   background: none;
-  width: 30px;
-  height: 30px;
   border: none;
   color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
-  padding: 6px;
   border-radius: 8px;
-  transition: color 0.2s;
+  transition: all 0.2s;
   -webkit-app-region: no-drag;
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-  }
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
+.btn-control {
+  width: 25px;
+  height: 25px;
+}
+.tohome,
+.fold,
+.dosearch,
 .musichub {
-  background: none;
   width: 30px;
   height: 30px;
-  border: none;
-  color: rgba(255, 255, 255, 0.6);
-  cursor: pointer;
   padding: 6px;
-  border-radius: 8px;
-  transition: color 0.2s;
-  -webkit-app-region: no-drag;
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-  }
 }
-/* 所有按钮区域必须声明 no-drag */
-.btn,
-.win-btn,
-.control {
-  -webkit-app-region: no-drag;
-  border: none;
-  background: transparent;
-  color: #fff;
-  cursor: pointer;
-  padding: 6px 8px;
-  border-radius: 4px;
-  transition: background 0.2s;
-}
-
-.win-btn.close {
-  color: #fff;
-  background: rgba(145, 145, 145, 0.12);
-}
-.win-btn:hover {
-  background: rgba(255, 255, 255, 0.04);
-}
-.btn:hover {
-  background: rgba(255, 255, 255, 0.02);
-}
-
-/* 用户菜单容器 */
-.user-menu-container {
-  position: relative;
-  -webkit-app-region: no-drag;
-}
-
 .user {
-  background: none;
   width: 45px;
   height: 45px;
-  border: none;
-  color: rgba(255, 255, 255, 0.6);
-  cursor: pointer;
   padding: 6px;
-  transition: color 0.2s;
-  -webkit-app-region: no-drag;
+}
+
+.btn-control:hover,
+.tohome:hover,
+.fold:hover,
+.dosearch:hover,
+.musichub:hover,
+.user:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-radius: 50%;
+}
+
+.musichub.active {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #fff;
 }
 
 .userPic {
@@ -486,30 +554,48 @@ button:focus {
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
-  display: block;
 }
 
-/* 下拉菜单样式 */
-.dropdown-menu {
+.win-btn {
+  padding: 6px 8px;
+}
+.win-btn.close:hover {
+  background: rgba(232, 17, 35, 0.9);
+}
+.win-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.explore {
+  -webkit-app-region: no-drag;
+}
+
+/* === Agent Dropdown & User Dropdown Common === */
+.agent-menu-container,
+.user-menu-container {
+  position: relative;
+  -webkit-app-region: no-drag;
+}
+
+.dropdown-menu,
+.agent-dropdown {
   position: absolute;
   top: 55px;
   right: 0;
-  background: rgb(#1c1c1e,0.9);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  min-width: 180px;
-  padding: 8px 8px;
+  background: rgba(28, 28, 30, 0.85);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   z-index: 1001;
-   /* 关键点 2: 开启毛玻璃模糊效果 */
-  backdrop-filter: blur(20px) saturate(180%); 
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  
-  /* 开启硬件加速 */
-  transform: translateZ(0); 
-  will-change: transform;
-  
-  /* 可选：添加细微的边框线增强层次感 */
-  transition: background 0.3s ease;
+  backdrop-filter: blur(25px) saturate(180%);
+  -webkit-backdrop-filter: blur(25px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transform-origin: top right;
+}
+
+/* User Menu Specific */
+.dropdown-menu {
+  min-width: 180px;
+  padding: 8px;
 }
 
 .menu-item {
@@ -521,75 +607,189 @@ button:focus {
   color: #e0e0e0;
   cursor: pointer;
   transition: background 0.2s;
+  font-size: 14px;
 }
-
 .menu-item:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
 }
-
-.menu-item svg {
-  flex-shrink: 0;
-}
-
 .menu-divider {
   height: 1px;
   background: rgba(255, 255, 255, 0.1);
-  margin: 8px 0;
+  margin: 6px 0;
 }
 
-/* 加载动画 */
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  border-top: 3px solid #0bdc9a;
+/* === Agent Dropdown Specific === */
+.agent-dropdown {
+  right: -80px; /* Adjust position */
+  width: 360px;
+  height: 500px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 1002;
+}
+
+.agent-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+}
+.clear-chat {
+  cursor: pointer;
+  opacity: 0.6;
+  font-size: 14px;
+}
+.clear-chat:hover {
+  opacity: 1;
+}
+
+.chat-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.chat-body::-webkit-scrollbar {
+  width: 4px;
+}
+.chat-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+.empty-state {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 13px;
+  margin-top: 50%;
+  transform: translateY(-50%);
+  line-height: 1.6;
+}
+
+.message-row {
+  display: flex;
+  width: 100%;
+}
+.message-row.user {
+  justify-content: flex-end;
+}
+.message-row.assistant {
+  justify-content: flex-start;
+}
+
+.bubble {
+  max-width: 80%;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+.user .bubble {
+  background-color: #0bdc9a;
+  color: #1c1c1e;
+  border-bottom-right-radius: 2px;
+  font-weight: 500;
+}
+.assistant .bubble {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #e0e0e0;
+  border-bottom-left-radius: 2px;
+}
+
+.chat-input-area {
+  padding: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.2);
+}
+.chat-input-area input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  border-radius: 20px;
+  padding: 8px 14px;
+  color: #fff;
+  font-size: 13px;
+  outline: none;
+}
+.chat-input-area input:focus {
+  background: rgba(255, 255, 255, 0.12);
+}
+.send-btn {
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  background: #0bdc9a;
+  border: none;
+  color: #1c1c1e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: bold;
+}
+.send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.loading-spinner.small {
-  width: 16px;
-  height: 16px;
-  border-width: 2px;
+/* Typing Animation */
+.typing-dots span {
+  animation: typing 1.4s infinite ease-in-out both;
+  margin: 0 1px;
+  font-weight: bold;
 }
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
+.typing-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+.typing-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+@keyframes typing {
+  0%,
+  80%,
   100% {
-    transform: rotate(360deg);
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
   }
 }
 
-@media (max-width: 768px) {
-  .topbar {
-    padding: 0 8px;
-  }
-
-  .user {
-    width: 36px;
-    height: 36px;
-  }
+/* Animations */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.95);
 }
 
-/* Update Modal Styles */
+/* Modal Styles */
 .update-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  padding-top: 400px;
-  border-radius: 10px;
-  background: none;
+  background: rgba(0, 0, 0, 0.5); /* Dim background */
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 2000;
   -webkit-app-region: no-drag;
 }
-
 .update-modal {
   background: #2c2c2e;
   padding: 24px;
@@ -598,32 +798,20 @@ button:focus {
   text-align: center;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
-
-.update-modal h3 {
-  margin: 0 0 16px 0;
-  color: #fff;
-}
-
 .status-content {
   margin-bottom: 20px;
   color: #e0e0e0;
   min-height: 60px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
 }
-
 .primary-btn {
-  background: #1c1c1c;
-  color: #fff;
+  background: #0bdc9a;
+  color: #1c1c1e;
   border: none;
   padding: 8px 16px;
   border-radius: 6px;
   cursor: pointer;
-  margin-top: 10px;
+  font-weight: 500;
 }
-
 .close-modal-btn {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -631,9 +819,7 @@ button:focus {
   padding: 6px 12px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 12px;
 }
-
 .progress-bar {
   width: 100%;
   height: 6px;
@@ -642,16 +828,27 @@ button:focus {
   margin-top: 10px;
   overflow: hidden;
 }
-
 .progress-fill {
   height: 100%;
-  background: #fff;
+  background: #0bdc9a;
   transition: width 0.3s ease;
 }
-
 .error-msg {
   color: #ff4d4f;
   font-size: 12px;
-  margin-top: 4px;
+}
+
+@media (max-width: 768px) {
+  .topbar {
+    padding: 0 8px;
+  }
+  .user {
+    width: 36px;
+    height: 36px;
+  }
+  .agent-dropdown {
+    right: -10px;
+    width: 300px;
+  }
 }
 </style>

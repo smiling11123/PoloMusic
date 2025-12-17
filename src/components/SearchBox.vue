@@ -50,7 +50,10 @@
 import { ref, onUnmounted } from 'vue'
 // 假设你的 api 文件路径如下，请根据实际情况调整
 import { SearchSuggest } from '@/api/Search'
-
+import { useRouter } from 'vue-router'
+import { search } from '@/stores/search'
+const router = useRouter()
+const searcher = search()
 const props = defineProps({
   modelValue: {
     type: String,
@@ -133,6 +136,8 @@ const onSearch = () => {
   if (props.modelValue.trim()) {
     showSuggestions.value = false // 搜索时隐藏建议
     emit('search', props.modelValue)
+    searcher.keyword = props.modelValue
+    router.push('SearchResult')
   }
 }
 

@@ -54,4 +54,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   removeSongFromLocalPlaylist: (data) => ipcRenderer.invoke('local:removeSongFromPlaylist', data),
   getLocalPlaylistSongs: (playlistId) => ipcRenderer.invoke('local:getPlaylistSongs', playlistId),
   getSongCountByList: (playlistid) => ipcRenderer.invoke('local:localplaylistcount', playlistid),
+
+  //网络检测
+  getnetstatuslistener: (callback) => {
+    const newcallback = (event, status) => callback(status)
+    ipcRenderer.on('netstatuschange', newcallback)
+    return () => {
+      ipcRenderer.removeListener('netstatuschange', newcallback)
+    }
+  },
+  //remove_netstatuslistener: () => ipcRenderer.removeListener('')
+  getnetstatus: () => ipcRenderer.invoke('checknetstatus')
 })

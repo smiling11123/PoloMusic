@@ -113,6 +113,7 @@
       </div>
     </div>
   </div>
+  <button class="skip" @click="skip">跳过登录</button>
 </template>
 
 <script setup lang="ts">
@@ -373,9 +374,9 @@ const handleCookieLogin = async () => {
       successMsg.value = `登录成功！欢迎 ${testRes.data.profile?.nickname || '用户'}`
       //router.push('/')
       setTimeout(() => {
-            router.replace('/')
-            window.location.reload()
-          }, 1500)
+        router.replace('/')
+        window.location.reload()
+      }, 1500)
     } else {
       throw new Error('Cookie无效或已过期')
     }
@@ -385,7 +386,11 @@ const handleCookieLogin = async () => {
     cookieLoading.value = false
   }
 }
-
+const skip = () => {
+  pagecontroler.isSkipLogin()
+  router.replace('/')
+  window.location.reload()
+}
 // 生命周期
 onMounted(() => {
   getQRCode()

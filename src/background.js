@@ -2,7 +2,49 @@ const { app, BrowserWindow, ipcMain, globalShortcut, screen, protocol } = requir
 const path = require('node:path')
 const generateConfig = require('../net/generateConfig')
 const { initLocalMusic, closeLocalMusic } = require('./electron/localMusic')
+let lastOnlineStatus = true
 
+async function netcheck() {
+  const { default: isOnline } = await import('is-online')
+  try {
+    const online = await isOnline()
+    return online
+  } catch (error) {
+    return false
+  }
+}
+async function startNetworkMonitoring(win) {
+  const { default: isOnline } = await import('is-online')
+  // 定义检测函数
+  const check = async () => {
+    // 只要窗口还在，就进行检测
+    if (!win || win.isDestroyed()) return
+
+    try {
+      const currentStatus = await isOnline()
+
+      // 只有当状态发生改变时，才通知 Vue
+      if (currentStatus !== lastOnlineStatus) {
+        lastOnlineStatus = currentStatus
+        console.log(`网络状态变更: ${currentStatus ? '在线' : '离线'}`)
+        //发送消息给渲染进程
+        win.webContents.send('netstatuschange', currentStatus)
+      }
+    } catch (error) {
+      console.error('网络检测失败', error)
+    }
+  }
+
+  // 1. 启动时立即检测一次
+  await check()
+
+  // 2. 设置轮询 (比如每 5 秒查一次)
+  // 注意：is-online 是真实请求外部服务器，太频繁会浪费资源
+  const intervalId = setInterval(check, 5000)
+
+  // 窗口关闭时清除定时器
+  win.on('closed', () => clearInterval(intervalId))
+}
 let mainWindow = null
 let lyricWindow = null
 const createWindow = () => {
@@ -208,9 +250,19 @@ const initAutoUpdater = () => {
 }
 
 app.whenReady().then(async () => {
+  const online = netcheck()
+  
+  // ipcMain.handle('checknetstatus', async ()=> {
+  //   return await isOnline()
+  // })
   // Generate anonymous token
-  await generateConfig()
-
+  try {
+    if (online) {
+      await generateConfig()
+    }
+  } catch (e) {
+    console.log(e)
+  }
   // Start API server
   if (app.isPackaged) {
     const port = 3000
@@ -241,6 +293,7 @@ app.whenReady().then(async () => {
 
   await createWindow()
   initAutoUpdater() // 初始化自动更新
+  startNetworkMonitoring(mainWindow)
   RegisterGlobalShortCut()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

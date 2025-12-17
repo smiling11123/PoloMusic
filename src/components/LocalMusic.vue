@@ -108,6 +108,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { findBestMatch } from '@/api/MatchService'
 import { Player } from '@/stores/index'
 import { useRoute } from 'vue-router'
+import { pagecontrol } from '@/stores/page'
 const player = Player()
 const route = useRoute()
 const songs = ref<any[]>([])
@@ -117,6 +118,7 @@ const totalCount = ref(0)
 const currentProcessingName = ref('')
 const defaultCover = 'https://p1.music.126.net/6y-UleORITEDbvrOLV0Q8A==/5639395138885805.jpg'
 const localListid = ref(null)
+const pagecontroler = pagecontrol()
 // --- 菜单状态 ---
 const activeMenuId = ref<number | null>(null)
 watch(
@@ -202,13 +204,14 @@ async function processPaths(paths: string[]) {
       }
 
       // 3. 只有当数据库里没有 neteaseId 或者想强制更新时才匹配
-      if (addRes && (addRes.success || addRes.error === 'duplicate')) {
+      if (addRes && (addRes.success || addRes.error === 'duplicate') && pagecontroler.IsOnline) {
         // --- 调用我们的精准匹配服务 ---
         const matchResult = await findBestMatch({
           title: tags.title,
           artist: tags.artist,
           album: tags.album,
           duration: tags.duration, // 秒
+       
         })
 
         if (matchResult) {
@@ -220,8 +223,15 @@ async function processPaths(paths: string[]) {
             artist: matchResult.artist,
             album: matchResult.album,
             coverUrl: matchResult.coverUrl,
+            lyric: matchResult.lyric,
+            Tlyric: matchResult.Tlyric,
+            yrc: matchResult.yrc,
+            Tyrc: matchResult.Tyrc,
+            Romaji: matchResult.Romaji,
           })
+          
         }
+        
       }
     } catch (e) {
       console.error(e)

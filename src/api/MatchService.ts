@@ -1,4 +1,5 @@
 // src/api/MatchService.ts
+import { GetMusicLyric, GetWordMusicLyric } from './GetMusic'
 import { request, withCookie } from './request' // 确保路径正确
 
 export interface MatchedMeta {
@@ -9,6 +10,11 @@ export interface MatchedMeta {
   album: string
   coverUrl: string
   duration: number
+  lyric: string
+  Tlyric: string
+  yrc: string
+  Tyrc: string
+  Romaji: string
 }
 
 // --- 配置：黑名单关键词 ---
@@ -148,6 +154,18 @@ export async function findBestMatch(localInfo: {
       // 3. 遍历当前页
       for (const song of songs) {
         if (isStrictMatch(localInfo, song, targetArtistId)) {
+          let lyric = null
+          let yrc = null
+          let Tlyric = null
+          let Tyrc = null
+          let Romaji = null
+          let lyricRes = await GetMusicLyric(song.id)
+          let lrcRes = await GetWordMusicLyric(song.id)
+          lyric = lyricRes.lrc?.lyric || null
+          Tlyric = lyricRes.tlyric?.lyric || null
+          yrc = lrcRes.yrc?.lyric || null
+          Tyrc = lrcRes.ytlrc?.lyric || null
+          Romaji = lrcRes.romalrc?.lyric || null
           console.log(`[Match] ✅ Match Found: ${song.name} (ID: ${song.id})`)
           return {
             id: song.id,
@@ -157,6 +175,11 @@ export async function findBestMatch(localInfo: {
             album: song.al?.name || song.album?.name,
             coverUrl: song.al?.picUrl || song.album?.picUrl,
             duration: song.dt,
+            lyric: lyric,
+            Tlyric: Tlyric,
+            yrc: yrc,
+            Tyrc: Tyrc,
+            Romaji: Romaji
           }
         }
       }

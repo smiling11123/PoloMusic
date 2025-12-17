@@ -35,7 +35,12 @@ const initDatabase = () => {
       cover TEXT,
       neteaseId INTEGER,
       coverUrl TEXT,
-      importAt INTEGER DEFAULT (strftime('%s', 'now'))
+      importAt INTEGER DEFAULT (strftime('%s', 'now')),
+      lyric TEXT,
+      yrc TEXT,
+      Tlyric TEXT,
+      Tyrc TEXT,
+      Romaji TEXT
     )
   `)
 
@@ -259,17 +264,22 @@ const searchSongs = (keyword) => {
  * @returns {Object} 更新结果
  */
 const updateSongMatchInfo = (id, matchInfo) => {
-  const { neteaseId, coverUrl, artist, album, title } = matchInfo
+  const { neteaseId, coverUrl, artist, album, title, lyric, Tlyric, yrc, Tyrc, Romaji } = matchInfo
   const stmt = db.prepare(`
     UPDATE songs
     SET neteaseId = COALESCE(?, neteaseId),
-        coverUrl = COALESCE(?, coverUrl),
+        coverUrl = COALESCE(coverUrl, ?),
         artist = COALESCE(?, artist),
         album = COALESCE(?, album),
-        title = COALESCE(?, title)
+        title = COALESCE(?, title),
+        lyric = COALESCE(lyric, ?),
+        Tlyric = COALESCE(Tlyric, ?),
+        yrc = COALESCE(yrc, ?),
+        Tyrc = COALESCE(Tyrc, ?),
+        Romaji = COALESCE(Romaji, ?)
     WHERE id = ?
   `)
-  return stmt.run(neteaseId, coverUrl, artist, album, title, id)
+  return stmt.run(neteaseId, coverUrl, artist, album, title, lyric, Tlyric, yrc, Tyrc, Romaji, id)
 }
 
 // --- Playlist Functions ---

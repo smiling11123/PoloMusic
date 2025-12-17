@@ -354,7 +354,7 @@ const parseYrcStr = (yrc: string): LyricLine[] => {
   const lineInfoRegex = /^\[(\d+),(\d+)\](.*)/
   const wordRegex = /\((\d+),(\d+),(\d+)\)([^\(]+)/g
 
-  for (const rawLine of rawLines) {
+  for (const rawLine of rawLines) { 
     const lineMatch = lineInfoRegex.exec(rawLine)
     if (lineMatch) {
       const lineStartTime = parseInt(lineMatch[1]) / 1000
@@ -449,7 +449,7 @@ const lyricLines = computed<LyricLine[]>(() => {
     }
   }
 
-  // === 插入间奏逻辑 (保持不变，但现在支持 LRC 了) ===
+
   const finalLines: LyricLine[] = []
 
   if (combinedLines.length > 0) {
@@ -1022,7 +1022,7 @@ const TurnIn = (artistid: number) => {
     1. 确保 active 时背景 position 的移动是平滑的
     2. 当非 active 时，通过颜色控制而不是背景跳转
   */
-  background-image: linear-gradient(to right, #fff 50%, rgba(255, 255, 255, 0.45) 50%);
+  background-image: linear-gradient(to right, #fff 45%, rgba(255, 255, 255, 0.45) 55%);
   background-size: 200% 100%;
   background-position: 100% 0; /* 默认全灰 */
 
@@ -1040,7 +1040,7 @@ const TurnIn = (artistid: number) => {
   background-position: calc(100% - var(--word-progress)) 0;
   /* 仅对 background-position 应用线性过渡，消除跳变 */
   transition:
-    background-position 0.1s linear,
+    // background-position 0.1s linear,
     transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
     text-shadow 0.3s ease;
 }

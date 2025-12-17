@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 export const request = axios.create({
-  baseURL: import.meta.env.VITE_API_HOST || 'http://localhost:3000',
+  baseURL: 'http://localhost:3000', //'https://api-enhanced-rjt8.onrender.com', //import.meta.env.VITE_API_HOST || 'http://localhost:3000',
   timeout: 0,
   withCredentials: true, // 默认尝试携带凭证（如果服务端设置了 CORS allow-credentials）
 })
@@ -19,3 +19,11 @@ export const withCookie = (params = {}) => {
     cookie: cookie || undefined
   }
 }
+//randomip 注入
+request.interceptors.request.use((config) => {
+  config.params = {
+    ...config.params,   
+    randomCNIP: true    
+  }
+  return config
+})
