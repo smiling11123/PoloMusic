@@ -102,6 +102,9 @@
           </n-tab-pane>
         </n-tabs>
       </n-card>
+      <div class="skipcontainer">
+        <button class="skip" @click="skip">跳过登录</button>
+      </div>
 
       <div class="message-area">
         <transition name="fade">
@@ -113,7 +116,6 @@
       </div>
     </div>
   </div>
-  <button class="skip" @click="skip">跳过登录</button>
 </template>
 
 <script setup lang="ts">
@@ -552,7 +554,21 @@ onUnmounted(() => {
 .form-item {
   margin-bottom: 16px;
 }
-
+.skipcontainer {
+  display: flex;
+  justify-content: center;
+}
+.skip {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  background: #000000;
+  border: none;
+  border-radius: 10px;
+  width: 50%;
+  height: 40px;
+  border-radius: 10px;
+}
 /* 原生输入框样式 */
 .custom-input {
   width: 100%;

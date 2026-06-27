@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, globalShortcut, screen, protocol } = require('electron/main')
+const { app, BrowserWindow, ipcMain, globalShortcut, screen, protocol, net } = require('electron/main')
 const path = require('node:path')
 const generateConfig = require('../net/generateConfig')
 const { initLocalMusic, closeLocalMusic } = require('./electron/localMusic')
@@ -250,7 +250,7 @@ const initAutoUpdater = () => {
 }
 
 app.whenReady().then(async () => {
-  const online = netcheck()
+  const online = await netcheck()
   
   // ipcMain.handle('checknetstatus', async ()=> {
   //   return await isOnline()
@@ -282,13 +282,13 @@ app.whenReady().then(async () => {
   initLocalMusic()
 
   // 注册 local-resource 协议用于播放本地文件
-  protocol.registerFileProtocol('local-resource', (request, callback) => {
+  protocol.handle('local-resource', (request) => {
     let filePath = decodeURIComponent(request.url.replace('local-resource://', ''))
     // Windows 路径处理: 如果是类似 D/path 的格式,恢复为 D:/path
     if (/^[A-Za-z]\//.test(filePath)) {
       filePath = filePath[0] + ':' + filePath.slice(1)
     }
-    callback({ path: filePath })
+    return net.fetch(`file://${filePath}`)
   })
 
   await createWindow()

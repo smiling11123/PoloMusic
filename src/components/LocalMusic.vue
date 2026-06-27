@@ -117,7 +117,7 @@ const processedCount = ref(0)
 const totalCount = ref(0)
 const currentProcessingName = ref('')
 const defaultCover = 'https://p1.music.126.net/6y-UleORITEDbvrOLV0Q8A==/5639395138885805.jpg'
-const localListid = ref(null)
+const localListid = ref()
 const pagecontroler = pagecontrol()
 // --- 菜单状态 ---
 const activeMenuId = ref<number | null>(null)
@@ -145,7 +145,7 @@ async function loadLocalSongs() {
   if (!window.electronAPI) return
   const id = localListid.value.toString()
   console.log('sid', id)
-  const res = ref(null)
+  const res = ref()
   if (id === 'whole') {
     res.value = await window.electronAPI.getAllLocalSongs()
   } else {

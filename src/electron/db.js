@@ -239,8 +239,8 @@ const getSongCount = () => {
  * @returns {number} 歌曲总数
  */
 const getSongCountByList = (playlistid) => {
-  const stmt = db.prepare('SELECT COUNT(*) as total FROM playlist_songs WHERE playlist_id = ? ')
-  return stmt.get(playlistid).count
+  const stmt = db.prepare('SELECT COUNT(*) as total FROM playlist_songs WHERE playlistId = ?')
+  return stmt.get(playlistid).total
 }
 /**
  * 搜索歌曲（按标题、艺术家、专辑）

@@ -1,19 +1,19 @@
 import OpenAI from 'openai'
 
-const GROQ_API_KEY = null
+// API Key 应通过环境变量或配置文件提供，不要硬编码
+const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || null
 
 // 初始化客户端
 const client = new OpenAI({
-  apiKey: GROQ_API_KEY || null,
-  // 1. 如果你在国外/开了全局代理，用官方地址：
-  //baseURL: 'https://api.groq.com/openai/v1',
+  apiKey: GROQ_API_KEY,
   baseURL: 'https://gorqserver.m15179028795-1.workers.dev/openai/v1',
-  
-  // 2. ⭐ 如果你在国内且没有魔法，用你的 Cloudflare Worker 地址：
-  // baseURL: "https://你的worker名.你的子域名.workers.dev/openai/v1",
-
-  dangerouslyAllowBrowser: true, // 允许在前端直接调用（个人项目没问题，生产环境建议走后端）
+  dangerouslyAllowBrowser: true,
 })
+
+// 未配置 API Key 时的提示
+if (!GROQ_API_KEY) {
+  console.warn('Groq API Key 未配置，AI 推荐功能将不可用。请在 .env 文件中设置 VITE_GROQ_API_KEY')
+}
 
 export async function getMusicRecommendation(userQuery: string) {
   try {

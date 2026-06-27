@@ -10,7 +10,7 @@ export const requestwordlyric = axios.create({
   timeout: 0,
 })
 export const withCookie = (params = {}) => {
-  const cacheBuster = Date.now
+  const cacheBuster = Date.now()
   const cookie = localStorage.getItem('neteaseCookie')
   return {
     ...params,

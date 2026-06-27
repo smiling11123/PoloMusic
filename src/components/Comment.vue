@@ -12,7 +12,7 @@
             <div class="artist-row">
               歌手：
               <span v-for="(ar, index) in songDetail.ar" :key="ar.id">
-                {{ ar.name }}<span v-if="index < songDetail.ar.length - 1"> / </span>
+                {{ ar.name }}<span v-if="index as any < songDetail.ar.length - 1"> / </span>
               </span>
             </div>
             <div class="album-row">专辑：{{ songDetail.al.name }}</div>
@@ -195,7 +195,7 @@ watch(
       const song = await window.electronAPI.getLocalSongById(rawId)
       songid.value = song.song?.neteaseId
     } else {
-      songid.value = rawId
+      songid.value = rawId as any
     }
     console.log(songid.value)
   },

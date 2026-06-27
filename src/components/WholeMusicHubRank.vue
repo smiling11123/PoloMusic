@@ -115,7 +115,7 @@ const playRank = async (item: RankItem) => {
     // 调用播放（如果 store.playcurrentSong 支持传 url，可直接传；否则按你现有逻辑处理）
     await player.playcurrentSong({
       firstId,
-    })
+    } as any)
     player.loadPlaylistData()
     console.log('isplaying', player.isplaying)
   } catch (err) {

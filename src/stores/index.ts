@@ -6,7 +6,8 @@ import {
   GetWordMusicLyric,
 } from '@/api/GetMusic'
 import { defineStore } from 'pinia'
-import { computed, ComputedRef, ref } from 'vue'
+import { computed, ref } from 'vue'
+import type { ComputedRef } from 'vue'
 import { GetPersonalFM } from '@/api/GetMusicList'
 import { userInfo } from './userInfo'
 export interface Song {
@@ -48,7 +49,7 @@ export const Player = defineStore(
   'Player',
   () => {
     const audio = new Audio() // 音频对象
-    const audiovolume = ref<number>(null)
+    const audiovolume = ref<number | null>(null)
     //audio.volume = audiovolume
     const isplaying = ref(false) // 播放状态
     const playnormal = ref(true)
@@ -63,19 +64,19 @@ export const Player = defineStore(
     }
     const currentSongUrl = ref<string | null>(null)
     const currentSongTime = ref<number>(0) //上次播放位置
-    const currentSongLyric = ref<string>(null)
-    const currentSongLrcLine = ref<string>(null) //当前歌词行，用于发送给桌面歌词
-    const currentSongYrc = ref<string>(null)
-    const currentSongTYrc = ref<string>(null)
-    const currentSongRoMaYrc = ref<string>(null)
-    const currentSongTLyric = ref<string>(null)
-    const useCookie = ref<String | null>(null)
-    const currentSongDetail = ref<SongItem>(null)
-    const nextSongDetail = ref<SongItem>(null)
+    const currentSongLyric = ref<string | null>(null)
+    const currentSongLrcLine = ref<string | null>(null) //当前歌词行，用于发送给桌面歌词
+    const currentSongYrc = ref<string | null>(null)
+    const currentSongTYrc = ref<string | null>(null)
+    const currentSongRoMaYrc = ref<string | null>(null)
+    const currentSongTLyric = ref<string | null>(null)
+    const useCookie = ref<string | null>(null)
+    const currentSongDetail = ref<SongItem | null>(null)
+    const nextSongDetail = ref<SongItem | null>(null)
     const nextSongUrl = ref<string | null>(null)
     const currentSongList = ref<SongItem[]>([])
-    const nextSongLyric = ref<string>(null)
-    const nextSongLrc = ref<string>(null)
+    const nextSongLyric = ref<string | null>(null)
+    const nextSongLrc = ref<string | null>(null)
     const userinfo = userInfo()
     const isSwitch = ref(false)
     const currentSongIndex: ComputedRef<number> = computed(() => {
@@ -182,7 +183,7 @@ export const Player = defineStore(
       console.warn('播放出错，尝试自动恢复...', e)
 
       if (isLocalSong(currentSong.value)) {
-        audio.src = currentSongUrl.value.toString()
+        audio.src = currentSongUrl.value?.toString() as any
         audio.load()
         audio.currentTime = currentSongTime.value
         audio.play()
@@ -199,7 +200,7 @@ export const Player = defineStore(
         // 重新请求接口获取最新链接（强制不使用缓存/预加载变量）
         let newUrl = ''
         const detail = await GetMusicDetail({ ids: songId })
-        newUrl = await getPlayableUrl(songId, detail.songs[0])
+        newUrl = await getPlayableUrl(songId, detail.songs[0]) as any
 
         if (newUrl) {
           console.log('获取到新链接，重新加载:', newUrl)
@@ -239,7 +240,7 @@ export const Player = defineStore(
       if (currentSong.value && isplaying.value === false) {
         isplaying.value = true
         if (isLocalSong(currentSong.value)) {
-          audio.src = currentSongUrl.value.toString()
+          audio.src = currentSongUrl.value?.toString() as any
           await audio.load()
           audio.currentTime = currentSongTime.value
           audio.play()
@@ -247,7 +248,7 @@ export const Player = defineStore(
         }
         const detail = await GetMusicDetail({ ids: currentSong.value })
         const url = await getPlayableUrl(currentSong.value, detail.songs[0])
-        audio.src = url
+        audio.src = url as any
         //setupAudioListener()
         await audio.load()
         audio.currentTime = currentSongTime.value
@@ -259,7 +260,7 @@ export const Player = defineStore(
     const playcurrentSong = async (input: number | string, ispre = false) => {
       isSwitch.value = true // 切换锁
       if (audio) {
-        audio.src = null
+        audio.src = null as any
         audio.pause()
       }
 
@@ -358,9 +359,9 @@ export const Player = defineStore(
       // 原有的网易云歌曲播放逻辑
       const canUsePreload =
         nextSongUrl.value && !ispre && playmodel.value !== 'random' && playmodel.value !== 'onlyone'
-      const data = ref(null)
-      const lyric = ref(null)
-      const lrc = ref(null)
+      const data = ref()
+      const lyric = ref()
+      const lrc = ref()
       let finalUrl: string | null = null
       isplaying.value = true // 设置播放状态为 true
       console.log('nexturl', nextSongUrl.value)
@@ -378,9 +379,9 @@ export const Player = defineStore(
       } else {
         //if(currentSong.value !== id) return
         finalUrl = nextSongUrl.value
-        data.value = nextSongDetail.value
-        lyric.value = nextSongLyric.value
-        lrc.value = nextSongLrc.value
+        data.value = nextSongDetail.value as any
+        lyric.value = nextSongLyric.value as any
+        lrc.value = nextSongLrc.value as any
         console.log('nextdetail', nextSongDetail.value)
         console.log('data', data.value)
       }
@@ -409,7 +410,7 @@ export const Player = defineStore(
       }
 
       currentSong.value = id
-      audio.src = url // 设置音频源
+      audio.src = url as any // 设置音频源
       currentSongTime.value = 0 //audio.currentTime
       audio.currentTime = 0
       //setupAudioListener() // 设置音频监听器
@@ -430,6 +431,14 @@ export const Player = defineStore(
       const nextindex = currentSongIndex.value + 1 //用于索引
       console.log('current', currentSongIndex.value)
       console.log('next', nextindex)
+      // 边界检查：如果下一首索引越界，清空预加载缓存并返回
+      if (nextindex < 0 || nextindex >= playlist.value.length) {
+        nextSongUrl.value = null
+        nextSongDetail.value = null
+        nextSongLyric.value = null
+        nextSongLrc.value = null
+        return
+      }
       const songDetail = await GetMusicDetail({ ids: playlist.value[nextindex] }) // 获取歌曲详细信息
       nextSongDetail.value = songDetail.songs[0]
       nextSongUrl.value = await getPlayableUrl(playlist.value[nextindex], nextSongDetail.value)
@@ -490,9 +499,9 @@ export const Player = defineStore(
         if (localIds.length > 0) {
           const localPromise = window.electronAPI
             ?.getLocalByIds(localIds)
-            .then((res) => {
+            .then((res: any) => {
               if (res && res.success && res.songs) {
-                res.songs.forEach((song) => {
+                res.songs.forEach((song: any) => {
                   idMap.set(song.id, {
                     id: song.id as any,
                     name: song.title,
@@ -505,7 +514,7 @@ export const Player = defineStore(
                 })
               }
             })
-            .catch((err) => console.error('获取本地歌曲详情失败:', err))
+            .catch((err: any) => console.error('获取本地歌曲详情失败:', err))
           promises.push(localPromise)
         }
 
@@ -574,7 +583,7 @@ export const Player = defineStore(
           return
         }
 
-        audio.src = currentSongUrl.value.toString()
+        audio.src = currentSongUrl.value?.toString() as any
         await audio.load()
         audio.currentTime = currentSongTime.value
         audio
@@ -596,7 +605,7 @@ export const Player = defineStore(
       console.log(playlist.value.length)
       console.log(currentSongList.value.length)
       console.log(currentSongIndex.value)
-      const song = ref<number | string>(null)
+      const song = ref<number | string>()
       const currentIndex = currentSongIndex.value === -1 ? 0 : currentSongIndex.value
       const nextIndex = (currentIndex + 1) % playlist.value.length // 计算下一首歌曲索引
       song.value = playlist.value[nextIndex]
@@ -611,9 +620,13 @@ export const Player = defineStore(
         console.log('israndom')
         nextSongUrl.value = null
         let randomindex
-        do {
-          randomindex = Math.floor(Math.random() * playlist.value.length)
-        } while (playlist.value.includes(randomindex))
+        if (playlist.value.length <= 1) {
+          randomindex = currentIndex
+        } else {
+          do {
+            randomindex = Math.floor(Math.random() * playlist.value.length)
+          } while (randomindex === currentIndex)
+        }
         const randomsong = playlist.value[randomindex]
         console.log(randomsong)
         console.log(randomindex)
@@ -626,7 +639,7 @@ export const Player = defineStore(
         if (currentSongIndex.value - playlist.value.length <= 3) {
           const fmRes = await GetPersonalFM()
           const fmList = fmRes.data
-          mappedFmSongs.value = fmList.map((song) => ({
+          mappedFmSongs.value = fmList.map((song: any) => ({
             id: song.id,
             name: song.name,
             album: song.album?.name,
@@ -640,9 +653,9 @@ export const Player = defineStore(
           if (Array.isArray(idRes)) {
             ids = idRes.map((v) => (typeof v === 'object' ? (v.id ?? v) : v))
           } else if (Array.isArray(idRes?.ids)) {
-            ids = idRes.ids.map((v) => (typeof v === 'object' ? (v.id ?? v) : v))
+            ids = idRes.ids.map((v: any) => (typeof v === 'object' ? (v.id ?? v) : v))
           } else if (Array.isArray(idRes?.data)) {
-            ids = idRes.data.map((v) => (typeof v === 'object' ? (v.id ?? v) : v))
+            ids = idRes.data.map((v: any) => (typeof v === 'object' ? (v.id ?? v) : v))
           } else if (idRes?.id) {
             ids = [idRes.id]
           }

@@ -38,7 +38,7 @@
                     :key="artist.id"
                     @click.stop="TurnIn(artist.id)"
                   >
-                    {{ artist.name }}<span v-if="index < song.artists.length - 1"> / </span>
+                    {{ artist.name }}<span v-if="index as any < song.artists.length - 1"> / </span>
                   </span>
                 </div>
               </div>
@@ -137,7 +137,7 @@ function playSong(song: SongItem, index: number) {
   player.nextSongUrl = null
   player.playcurrentSong(song.id)
 }
-const TurnIn = (artistid) => {
+const TurnIn = (artistid: any) => {
   router.push({ name: 'artist', params: { id: artistid } })
 }
 </script>

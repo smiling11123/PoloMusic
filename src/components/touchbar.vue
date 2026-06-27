@@ -2,7 +2,7 @@
   <div class="touchbar" role="region" aria-label="player touchbar">
     <div class="left-area">
       <div class="cover-container" v-if="player.currentSong">
-        <img :src="player.currentSongDetail.cover" alt="cover" class="cover-img" />
+        <img :src="player.currentSongDetail?.cover" alt="cover" class="cover-img" />
         <div class="lyric-btn-overlay" @click="ShowLyric()">
           <svg class="icon-lyric" viewBox="0 0 320 512" fill="currentColor">
             <path
@@ -17,17 +17,17 @@
         </div>
       </div>
       <div class="meta-info">
-        <div class="song-title" :title="player.currentSongDetail.name">
-          {{ player.currentSongDetail.name || 'PoloMusic' }}
+        <div class="song-title" :title="player.currentSongDetail?.name">
+          {{ player.currentSongDetail?.name || 'PoloMusic' }}
         </div>
         <div class="artist-name">
           <span
-            v-for="(artist, index) in player.currentSongDetail.artists"
+            v-for="(artist, index) in player.currentSongDetail?.artists"
             :key="artist.id"
             @click="TurnIn(artist.id)"
           >
             {{ artist.name
-            }}<span v-if="index < player.currentSongDetail.artists.length - 1"> / </span>
+            }}<span v-if="index < ((player.currentSongDetail?.artists.length as any) - 1)"> / </span>
           </span>
         </div>
       </div>
@@ -266,7 +266,7 @@ const bindAudioEvents = () => {
   isEventBound = true
 }
 
-const handlekey = (event) => {
+const handlekey = (event: any) => {
   const ctrl = event.ctrlKey
   const shift = event.shiftKey
   const alt = event.altKey
@@ -290,11 +290,11 @@ onMounted(() => {
     }
     bindAudioEvents()
     window.addEventListener('keyup', handlekey)
-    duration.value = player.audio.duration || player.currentSongDetail.duration || 0
+    duration.value = player.audio.duration || player.currentSongDetail?.duration || 0
     currentTime.value = player.audio.currentTime || player.currentSongTime || 0
     seekValue.value = currentTime.value
     if (window.electronAPI) {
-      window.electronAPI.deskLyricStatus((event, status) => {
+      window.electronAPI.deskLyricStatus((event: any, status: any) => {
         pagecontroler.ShowDeskLyric = status
       })
     }
@@ -375,7 +375,7 @@ function prev() {
 const next = async () => {
   player.playNextSong && player.playNextSong()
 }
-const TurnIn = (artistid) => {
+const TurnIn = (artistid: any) => {
   router.push({ name: 'artist', params: { id: artistid } })
 }
 const Randomplaymodel = () => {

@@ -143,7 +143,7 @@ watchEffect(() => {
 })
 
 // 数据获取
-const fetchData = async (Keyword) => {
+const fetchData = async (Keyword: any) => {
   try {
     const res = await GetSearchData({ keyword: Keyword, type: 100, limit: 10 })
     items.value = (res.result.artists || []).map((m: any) => ({

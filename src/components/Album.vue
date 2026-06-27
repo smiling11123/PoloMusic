@@ -192,7 +192,7 @@
                   ></path>
                 </svg>
               </button>
-              <span class="song-duration">{{ formatTime(song.duration) }}</span>
+              <span class="song-duration">{{ formatTime(song.duration as any) }}</span>
             </div>
           </div>
         </div>

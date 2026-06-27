@@ -23,7 +23,9 @@
     "pkgwin": "pkg . -t node18-win-x64 -C GZip -o bin/app --no-bytecode",
     "pkglinux": "pkg . -t node18-linux-x64 -C GZip -o bin/app --no-bytecode",
     "pkgmacos": "pkg . -t node18-macos-x64 -C GZip -o bin/app --no-bytecode",
-    "electron:build": "vite build && electron-builder -p always "
+    "postinstall": "electron-rebuild -f -w better-sqlite3",
+    "electron:build": "vite build && electron-builder -p always ",
+    "electron:build:linux": "vite build && electron-builder --linux"
   },
   "bin": "net/app.js",
   "pkg": {
@@ -88,8 +90,7 @@
     "pinia-plugin-persistedstate": "^4.7.1",
     "vue": "^3.5.22",
     "vue-router": "^4.6.3",
-    "vuedraggable": "^4.1.0",
-    "wait-on": "9.0.3"
+    "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.37.0",
@@ -101,6 +102,7 @@
     "@vue/test-utils": "^2.4.6",
     "concurrently": "^9.2.1",
     "electron-builder": "^26.0.12",
+    "electron-rebuild": "^3.2.9",
     "eslint": "^9.37.0",
     "eslint-plugin-playwright": "^2.2.2",
     "eslint-plugin-vue": "~10.5.0",
@@ -133,6 +135,13 @@
     ],
     "win": {
       "target": "nsis"
+    },
+    "linux": {
+      "target": [
+        "deb"
+      ],
+      "category": "Audio",
+      "maintainer": "yb"
     },
     "nsis": {
       "oneClick": false,

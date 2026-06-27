@@ -1,4 +1,3 @@
-import { lightTheme } from 'naive-ui'
 import { request, withCookie } from './request.js'
 /* 
 limit: 获取数量限制

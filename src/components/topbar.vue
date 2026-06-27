@@ -431,7 +431,7 @@ const closeUpdateModal = () => {
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
 
-  window.electronAPI?.onAutoUpdaterMessage((event, { message, data }) => {
+  window.electronAPI?.onAutoUpdaterMessage((event: any, { message, data }: any) => {
     switch (message) {
       case 'checking-for-update':
         updateStatus.value = 'checking'

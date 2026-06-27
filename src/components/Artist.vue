@@ -220,7 +220,7 @@
                     ></path>
                   </svg>
                 </button>
-                <span class="song-duration">{{ formatTime(song.duration) }}</span>
+                <span class="song-duration">{{ formatTime(song.duration as any) }}</span>
               </div>
             </div>
           </div>
@@ -339,7 +339,7 @@ async function loadPlaylistData() {
     // 获取热门歌曲详情
     const songIds = hotsongs.map((song: any) => song.id)
     const results = await Promise.all(
-      songIds.map((id) =>
+      songIds.map((id: any) =>
         GetMusicDetail({ ids: id })
           .then((res) => res)
           .catch(() => null),
