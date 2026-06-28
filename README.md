@@ -1,82 +1,111 @@
+<div align="center">
 
+# PoloMusic
 
-# **PoloMusic**
-> **此版本将只发布release，具体更新请前往 [Tauri 重构版](https://github.com/smiling11123/polomusic-tauri)。**
+**基于 Vue 3 + Electron 的第三方网易云音乐播放器**
+
+[![Release](https://img.shields.io/badge/Release-最新-blue?style=flat-square)](https://github.com/smiling11123/polomusic/releases)
+[![Tauri](https://img.shields.io/badge/Tauri_重构版-推荐-orange?style=flat-square)](https://github.com/smiling11123/polomusic-tauri)
+[![Vue](https://img.shields.io/badge/Vue_3-3.5-brightgreen?style=flat-square)](https://vuejs.org/)
+[![Electron](https://img.shields.io/badge/Electron-33-blue?style=flat-square)](https://electronjs.org/)
+
+> **此版本将只发布 release，所有新功能和修复请前往 [Tauri 重构版](https://github.com/smiling11123/polomusic-tauri)。**
 >
-> Tauri 版体积更小（~15 MB vs ~150 MB）、内存占用更低、内置 Rust 原生音频引擎，所有新功能和修复 Tauri 版会先发布。
-> 
-基于vue3 + Electron的音乐播放器，数据由第三方网易云api获取。（技术有限，在一些性能优化、代码规范上做得不是很好，这在后续会进行规范化。对于打包后体积过大问题暂时不解决，这个只作为一个小玩具。）
+> Tauri 版体积更小（~15 MB vs ~150 MB）、内存占用更低、内置 Rust 原生音频引擎。
 
-![image-20251123101105521](Img/main.png)
+</div>
 
-![image-20251123101128357](Img/search.png)
+---
 
-![image-20251122090317523](Img/lyric.png)
+## 效果预览
 
-## 使用
+| 主页 | 搜索 | 歌词 |
+|:---:|:---:|:---:|
+| <img src="Img/main.png" alt="主页"/> | <img src="Img/search.png" alt="搜索"/> | <img src="Img/lyric.png" alt="歌词"/> |
 
-------
+---
 
-拉取文件到本地
-将[第三方网易云api](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced)文件夹放到polomusic中，
+## 功能特性
 
-分别在polomusic和net目录下执行`npm install`
+| 类别 | 功能 |
+|:---:|:---|
+| **播放** | 逐字歌词、类 Apple Music 歌词页面、拖动排序播放列表、音乐解灰、无 VIP 替换试听链接 |
+| **推荐** | 每日推荐歌单、私人 FM、最新音乐推荐、精选歌单 |
+| **交互** | 窗口快捷键、全局快捷键、评论、本地导入 |
+| **账号** | 网易账号登录（手机 / 邮箱 / 扫码 / Cookie） |
+| **持久化** | 关闭应用自动保存播放进度与播放列表 |
 
-vue服务默认端口 5173
-net api服务默认端口 3000
-可通过`npm run electron:dev`启动三个服务
+> **登录说明：** 手机、邮箱和扫码登录目前由于 API 限制无法完美支持，扫码登录较慢（约两分钟）。
 
-也可以将net api[部署](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced)在服务器减轻本地占用
+---
 
-## 功能
+## 快捷键
 
-------
+| 操作 | 全局快捷键 | 窗口快捷键 |
+|:---:|:---:|:---:|
+| 播放 / 暂停 | `Ctrl + Alt + C` | `Ctrl + P` |
+| 上一首 | `Ctrl + Alt + Z` | `Ctrl + ←` |
+| 下一首 | `Ctrl + Alt + X` | `Ctrl + →` |
 
-- 支持网易账号登录（手机 / 邮箱 / 扫码 / cookie） ps: 手机、邮箱和扫码登录目前由于api限制无法完美支持,扫码登录比较慢(测试成功登录需要近两分钟)。
-- 支持显示类AppleMusic歌词页面
-- 支持逐字歌词
-- 提供窗口快捷键、全局快捷键
-- 支持拖动改变播放顺序
-- 支持评论
-- 支持本地导入
-- 支持每日推荐歌单、私人FM  ps: 私人FM可能存在瑕疵。
-- 支持音乐解灰(感谢[第三方网易云api](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced)提供的接口以及[unblockneteasemusic](https://github.com/UnblockNeteaseMusic/server)提供的解灰服务）
-- 支持无vip播放时替换原试听链接为其他平台(由[解灰服务](https://github.com/UnblockNeteaseMusic/server)为基础)
-- 支持最新音乐推荐
-- 支持推荐歌单
-- 支持精选歌单
-- 支持关闭应用保存上次播放信息（进度、播放列表）
-- ...更多功能还在开发中
+---
 
-### 快捷键
+## 快速开始
 
-| 全局快捷键 |                |
-| :--------: | :------------: |
-|    播放    | ctrl + alt + c |
-|   上一首   | ctrl + alt + z |
-|   下一首   | ctrl + alt + x |
-| 窗口快捷键 |                |
-|    播放    |    ctrl + p    |
-|   上一首   |  ctrl + left   |
-|   下一首   |  ctrl + right  |
+### 1. 克隆项目
 
+```bash
+git clone https://github.com/smiling11123/polomusic.git
+cd polomusic
+```
 
+### 2. 放置 API 服务
 
+将 [第三方网易云 API](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced) 文件夹放入项目根目录。
 
-## 待完善功能
+### 3. 安装依赖
 
-------
+```bash
+# 安装前端依赖
+npm install
 
-1. 完善快捷键
-   
-## 灵感来源
+# 安装 API 服务依赖
+cd net && npm install && cd ..
+```
 
-------
+### 4. 启动开发环境
 
-[网易云音乐](https://music.163.com/)
+```bash
+npm run electron:dev
+```
 
-[yesplaymusic](https://github.com/qier222/YesPlayMusic)
+| 服务 | 默认端口 |
+|:---:|:---:|
+| Vue 前端 | `5173` |
+| Net API | `3000` |
+
+> 也可以将 Net API [部署在服务器](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced) 以减轻本地占用。
+
+---
+
+## 致谢
+
+| 项目 | 说明 |
+|:---:|:---|
+| [NeteaseCloudMusicApiEnhanced](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced) | 第三方网易云 API |
+| [UnblockNeteaseMusic](https://github.com/UnblockNeteaseMusic/server) | 音乐解灰服务 |
+| [YesPlayMusic](https://github.com/qier222/YesPlayMusic) | 灵感来源 |
+| [网易云音乐](https://music.163.com/) | 原始设计参考 |
+
+---
 
 ## 开发说明
-修改、二次分发请注明出处
 
+修改、二次分发请注明出处。
+
+---
+
+<div align="center">
+
+**技术栈：** Vue 3 · Electron · Pinia · Vue Router · TypeScript
+
+</div>
